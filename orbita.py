@@ -42,7 +42,7 @@ try:
 
             if delta1 < tolerancia or delta2 < tolerancia:
                 print("Orbitable, comenzando órbita")
-                PWM.set_motor_model(0,0,+600,-600)
+                PWM.set_motor_model(0,0,-600,+600)
             else:
                 print("No orbitable")
 except KeyboardInterrupt:
