@@ -2,7 +2,7 @@ from motor import Ordinary_Car
 
 class Moves:
     def __init__(self):
-        self.PWM = Ordinary_Car #Inicializa los motores
+        self.PWM = Ordinary_Car() #Inicializa los motores
         
     def forward(self,speed=600):
         # Avanza hacia delante
