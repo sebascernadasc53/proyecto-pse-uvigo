@@ -5,7 +5,7 @@ from robot import Robot
 # Inicialización
 rover1 = Robot()
 dist = 0
-v=1000
+v0=1000
 
 print("Prueba...")
 
@@ -14,16 +14,17 @@ try:
         dist = rover1.distance
         
         if dist > 90:
-            v=v
+            v=v0
+            print(f"d={dist} cm Movimiento")
         elif 25 < dist <= 90:
-            v=0.6*v
+            v=0.6*v0
+            print(f"d={dist} cm Movimiento")
         else:
-            print(f"¡Objeto detectado! Frenando...")
+            print(f"d={dist} cm ¡Objeto detectado! Frenando...")
             v=0
             
         rover1.motores(v)
-        print(f"d={dist} cm")
-        time.sleep(0.1)
+        time.sleep(0.01)
 
 except KeyboardInterrupt:
     print("\nFinalizando ejecución...")
