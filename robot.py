@@ -11,15 +11,15 @@ class Robot:
         self._running = True
         
         # El hilo solo se encarga de actualizar la lectura del sensor de ultrasonidos
-        self.thread = Thread(target=self._update_ultrasonic, daemon=True)
+        self.thread = Thread(target=self.update_ultrasonic, daemon=True)
         self.thread.start()
 
-    def _update_ultrasonic(self):
+    def update_ultrasonic(self):
         while self._running:
             dist = self.ultrasonic.get_distance()
             if dist is not None:
                 self.distance = dist
-            time.sleep(0.05)
+            time.sleep(0.01)
     
     def motores(self,v):
         self.PWM.set_motor_model(v, v, v, v)
