@@ -1,16 +1,28 @@
 import time
-from motor import Ordinary_Car # Asegúrate de que esta clase soporte 4 argumentos
+from motor import Ordinary_Car 
 from ultrasonic import Ultrasonic
 
 ultrasonic = Ultrasonic()
-robot = Ordinary_Car()
+PWM = Ordinary_Car()
 
 D_TARGET = 40  # Distancia deseada al objeto (cm)
-TOLERANCIA = 5
+TOL= 5
 SPEED = 800
+def verificar_objeto():
+    print("Analizando orbitabilidad...")
+    lecturas = []
+    for _ in range (5):
+        d = ultrasonic.get_distance()
+        if d: lecturas.append(d)
+        time.sleep(0.1)
+    if len(lecturas) < 3:
+        print(f"No hay suficientes lecturas {(len(lecturas))} para verificar el objeto")
+        return False
+    
+
 
 def stop_robot():
-    robot.set_motor_model(0, 0, 0, 0)
+    PWM.set_motor_model(0, 0, 0, 0)
 
 try:
     while True:
@@ -21,25 +33,38 @@ try:
 
         print(f"Distancia: {dist} cm")
 
-        if dist > D_TARGET + 20:
-            # Si está muy lejos, avanza de frente
+        if dist > D_TARGET + TOL:
             print("Buscando objeto...")
-            robot.set_motor_model(SPEED, SPEED, SPEED, SPEED)
-        
-        elif dist < D_TARGET - 10:
-            # Si está demasiado cerca, retrocede un poco
+            PWM.set_motor_model(-SPEED,-SPEED, -SPEED, -SPEED)
+
+        elif dist < D_TARGET:
+
             print("Demasiado cerca, alejándose")
-            robot.set_motor_model(-SPEED, -SPEED, -SPEED, -SPEED)
+            PWM.set_motor_model(SPEED, SPEED, SPEED, SPEED)
             
         else:
-            # RANGO DE ÓRBITA: Desplazamiento lateral con ligera rotación
-            # Para orbitar en sentido horario manteniendo el frente al objeto:
-            print("Orbitando...")
-            # Combinación típica Mecanum para strafe circular:
-            # FrontLeft: +, FrontRight: -, RearLeft: -, RearRight: +
-            # Ajustamos valores para que "cierre" el círculo hacia el objeto
-            robot.set_motor_model(800, -200, -200, 800) 
-            
+
+            print("Deteniendo para verificar...")
+# verificacion
+            if verificar_objeto():
+                print("Objeto orbitable. Iniciando órbita...")
+                # Movimiento Mecanum: Strafe lateral + corrección de ángulo
+                while True:
+                    d_actual = ultrasonic.get_distance()
+                    if d_actual is None or d_actual > D_TARGET + 20:
+                        print("Objeto perdido durante la órbita")
+                        break
+                    
+                    # Órbita sentido horario
+                    # Ajustar valores segun respuesta del robot
+                    PWM.set_motor_model(SPEED, -SPEED//2, -SPEED//2, SPEED)
+            else:
+                print("Objeto inestable o demasiado pequeño. Reintentando...")
+                # Pequeño giro para buscar por otro lado
+                PWM.set_motor_model(500, 500, -500, -500)
+                time.sleep(0.3)
+
 except KeyboardInterrupt:
-    stop_robot()
-    print("Detenido por el usuario")
+    PWM.set_motor_model(0,0,0,0)
+    print("Programa detenido")
+            
