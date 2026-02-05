@@ -1,20 +1,20 @@
 from buzzer import Buzzer
-from photoresistor import Photoresistor
+from adc import ADC
 import time
 
-# Inicialización de componentes
+#Inicialización de componentes
 bocina = Buzzer()
-sensor_luz = Photoresistor()
+adc = ADC()
 
-# Definimos un Umbral de 1.2, por ejemplo
+#Definimos un Umbral de 1.2, por ejemplo
 UMBRAL = 1.2
 
 try:
     print("Inicio del sistema de alerta por oscuridad (antipérdida del vehículo)...")
     while True:
         # Leemos los valores que dan los sensores de los sensores de luz
-        val_izq = sensor_luz.read_left_photoresistor()
-        val_der = sensor_luz.read_right_photoresistor()
+        val_izq = adc.read_adc(0)
+        val_der = adc.read_adc(1)
 
         if val_izq is not None and val_der is not None:
             print(f"Valor de sensor izquierdo: {val_izq}V | Valor de sensor derecho: {val_der}V")
@@ -35,9 +35,8 @@ try:
 except KeyboardInterrupt: # Cierre de programa
     print("\nDeteniendo programa...")
     bocina.set_state(False) # Nos aseguramos de apagar la bocina
-    
+
 finally:
     # Cerramos la bocina y el sensor_luz
     bocina.close()
-    sensor_luz.stop()
     print("Fin de programa de búsqueda")
