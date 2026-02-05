@@ -12,7 +12,7 @@ try:
           print("Probando órbitas horarias, para antihorarias cambiar signo")
           print(f"Distancia: {dist} cm")
           print("Peso Traslación = Peso Rotación")
-          PWM.set_motor_model(0,2000,0,-2000)
+          PWM.set_motor_model(0,4000,0,-4000)
           print("0,2000,0,-2000")
           time.sleep(2)
 
