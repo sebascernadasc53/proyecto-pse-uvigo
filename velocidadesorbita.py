@@ -7,6 +7,7 @@ ultrasonic = Ultrasonic()
 PWM = Ordinary_Car()
 dist = ultrasonic.get_distance()
 PWM.set_motor_model(0,0,0,0)
+#max 4000
 try:
      while dist > 5:
           print("Probando órbitas horarias, para antihorarias cambiar signo")
@@ -15,14 +16,14 @@ try:
           PWM.set_motor_model(0,4000,0,-4000)
           #TRANSLACIÓN
           print("Peso translación 1,5")
-          PWM.set_motor_model(-500,2500,2000,-4000)
-          print("-500,2500,2000,-4000")
+          PWM.set_motor_model(-1000,4000,1000,-4000)
+          print("-1000,4000,1000,-4000")
           time.sleep(5)
           PWM.set_motor_model(0,0,0,0)
           time.sleep(2)         
           print("Peso translación 1,2")
           PWM.set_motor_model(-200,2200,1400,-3400)
-          print("-200,2200,1400,-3400")
+          print("-400,4000,400,-4000")
           time.sleep(5)
           PWM.set_motor_model(0,0,0,0)
           time.sleep(5)
