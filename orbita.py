@@ -33,8 +33,8 @@ try:
             print(f"variacion {delta1} cm")
 
             print("Probando orbita antihoraria...")
-            PWM.set_motor_model(0,0,+600,-600) #orbita horario
-            time.sleep(1.5)# tiempo de orbita de testeo
+            PWM.set_motor_model(0,0,+600,-600) #orbita horario, es posibe que este movimiento solo rote, hay que probarlo
+            time.sleep(1.5)# tiempo de orbita de testeo 
             PWM.set_motor_model(0,0,0,0)
             d2 = ultrasonic.get_distance()
             delta2 = abs(d2-d0)

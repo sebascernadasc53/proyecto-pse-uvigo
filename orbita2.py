@@ -48,7 +48,6 @@ try:
 # verificacion
             if verificar_objeto():
                 print("Objeto orbitable. Iniciando órbita...")
-                # Movimiento Mecanum: Strafe lateral + corrección de ángulo
                 while True:
                     d_actual = ultrasonic.get_distance()
                     if d_actual is None or d_actual > D_TARGET + 20:
