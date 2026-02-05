@@ -14,6 +14,7 @@ try:
           print(f"Distancia: {dist} cm")
           print("Peso Traslación = Peso Rotación") #esta funciona  pero las ruedas patinan un poco
           PWM.set_motor_model(0,4000,0,-4000)
+          time.sleep(5)
           #TRANSLACIÓN
           print("Peso translación 1,5")
           PWM.set_motor_model(-1000,4000,1000,-4000)
