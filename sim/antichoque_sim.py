@@ -1,6 +1,5 @@
 import time
-from threading import Thread
-from robot import Robot
+from robot_sim import Robot
 
 # Inicialización
 rover1 = Robot()
@@ -18,13 +17,13 @@ try:
             print(f"d={dist} cm Movimiento")
         elif 25 < dist <= 90:
             v=0.6*v0
-            print(f"d={dist} cm Movimiento")
+            print(f"d={dist} cm Movimiento Lento")
         else:
             print(f"d={dist} cm ¡Objeto detectado! Frenando...")
             v=0
             
-        rover1.motores(int(-v))
-        time.sleep(0.01)
+        rover1.motores(v)
+        time.sleep(1)
 
 except KeyboardInterrupt:
     print("\nFinalizando ejecución...")
