@@ -14,8 +14,8 @@ def hilo_radar(sensor, cuello):
     print("[Sistema] Radar horizontal iniciado (1 servo)")
 
     ANGULO_CENTRO = 70
-    ANGULO_IZQ = ANGULO_CENTRO - 30   # 40°
-    ANGULO_DER = ANGULO_CENTRO + 30   # 100°
+    ANGULO_IZQ = ANGULO_CENTRO - 50   # 40°
+    ANGULO_DER = ANGULO_CENTRO + 50   # 100°
 
     # Barrido continuo izquierda → derecha → izquierda
     recorrido = (
@@ -55,10 +55,10 @@ def hilo_motores(robot):
             print(f"[!] Obstáculo a {distance} cm")
 
             robot.backward(900)
-            time.sleep(0.4)
+            time.sleep(0.3)
 
             robot.clockwise_turn(1200)
-            time.sleep(0.5)
+            time.sleep(0.2)
 
         time.sleep(0.05)
 
@@ -72,6 +72,7 @@ def main():
 
     print("[Config] Centrando servo horizontal...")
     servo.set_servo_pwm('0', 70)
+    servo.set_servo_pwm('1', 90)
     time.sleep(1)
 
     # Hilos
