@@ -7,10 +7,11 @@ from moves import Moves
 # variables 
 distance = 150  # distancia medida por ultrasonidos (cm), este solo es un valor inicial luego ya toma el valor del ultrasonido
 running = True
+look_center = False
 
 # Movimiento continuo de la cabeza del robot en horizontal
 def hilo_radar(sensor, cuello):
-    global distance, running
+    global distance, running, look_center
     print("[Sistema] Radar horizontal iniciado (1 servo)")
 
     ANGULO_CENTRO = 70
@@ -27,38 +28,52 @@ def hilo_radar(sensor, cuello):
         for angulo in recorrido:
             if not running:
                 break
+            if look_center:
+                cuello.set_servo_pwm('0',70)  # Servo horizontal
+            else:
+                cuello.set_servo_pwm('0',angulo)
 
-            cuello.set_servo_pwm('0', angulo)  # SOLO servo horizontal
-            time.sleep(0.08)  
-
+            time.sleep(0.02)
             lectura = sensor.get_distance()
             if lectura is not None:
                 distance = lectura
 
 # Lógica Roomba
 def hilo_motores(robot):
-    global distance, running
+    global distance, running, look_center
     print("[Sistema] Lógica Roomba activa")
 
     while running:
 
         # CAMINO LIBRE
-        if distance > 80:
+        if distance > 60:
             robot.forward(1000)
-
+            look_center = False # Radar modo barrido
+            
         # PRECAUCIÓN
         elif 25 < distance <= 60:
             robot.forward(700)
-
+            look_center = False # Radar modo barrido
         # OBSTÁCULO CERCA → MANIOBRA
         else:
             print(f"[!] Obstáculo a {distance} cm")
-
-            robot.backward(900)
-            time.sleep(0.3)
-
-            robot.clockwise_turn(1200)
+            
+            # Paso 1: Parar el robot indmediatamente
+            robot.stop()
+            look_center = True
+            time.sleep(0.1)
+            
+            #robot.backward(900)
+            #time.sleep(0.3)
+            
+            # Paso 2: Girar hasta que el camino esté despejado (bucle que termina cuando la distancia es mayor que 40 cm)
+            while distance <= 45 and running:
+                robot.clockwise_turn(800) # Gira sobre sí mismo en sentido horario
+                time.sleep(0.1)
+            print("[OK] Camino despejado, reanudando marcha.")
             time.sleep(0.2)
+            robot.stop()
+            time.sleep(0.1)
 
         time.sleep(0.05)
 
