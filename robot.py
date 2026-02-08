@@ -1,5 +1,7 @@
 from motor import Ordinary_Car
 from ultrasonic import Ultrasonic
+from infrared import Infrared
+from adc import ADC
 import time
 from threading import Thread
 
@@ -20,6 +22,48 @@ class Robot:
             if dist is not None:
                 self.distance = dist
             time.sleep(0.01)
+    
+    def read_Adc():
+    '''Lectura de los sensores ADC'''
+    adc = ADC()
+    try:
+        print ("Leyendo ADC ...")
+        while True:
+            #fotoresistencia izquierda
+            Left = adc.read_adc(0)
+            print (f"Fotoresistencia izq: V = {Left} V")
+            #fotoresistencia derecha
+            Right = adc.read_adc(1)
+            print (f"Fotoresistencia dcha: V = {Right} V")
+            #batería
+            Battery = adc.read_adc(2) * (3 if adc.pcb_version == 1 else 2)
+            print (f"Batería: V = {Battery} V")
+            #lectura cada 1 s
+            print ('================================================')
+            time.sleep(1)
+    except KeyboardInterrupt:
+        print ("\nEnd of program")
+
+def read_Infrared():
+    '''Lectura de los  infrarrojos'''
+    infrared = Infrared()
+    try:
+        while True:
+            #LECTURAS
+            IR_centro = infrared.read_one_infrared(1)
+            IR_izquierda = infrared.read_one_infrared(2)
+            IR_derecha = infrared.read_one_infrared(3)
+            #MOSTRAR LECTURAS
+            if IR_centro != 1 and IR_izquierda == 1 and IR_derecha != 1:
+                print ('Infrarrojos CENTRO')
+            elif IR_centro != 1 and IR_izquierda != 1 and IR_derecha == 1:
+                print ('Infrarrojos DERECHA')
+            elif IR_centro == 1 and IR_izquierda != 1 and IR_derecha != 1:
+                print ('Infrarrojos IZQUIERDA')
+            print("========================================")
+    except KeyboardInterrupt:
+        infrared.close()
+        print("\nEnd of program")
     
     def forward(self,speed=600):
         # Avanza hacia delante
