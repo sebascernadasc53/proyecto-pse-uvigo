@@ -43,8 +43,8 @@ except ImportError:
 app = Flask(__name__)
 
 robot_controller = Robot()
-is_stopped = True # Estado global de movimiento para el color del sensor
-current_global_speed = 600 # Velocidad por defecto para movimientos rápidos
+current_global_speed = 600 
+current_status = "Parado" # Variable global para rastrear el texto del estado
 
 HTML_TEMPLATE = """
 <!DOCTYPE html>
@@ -80,19 +80,28 @@ HTML_TEMPLATE = """
 
         .container { max-width: 900px; width: 100%; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
 
-        /* Panel del Sensor */
-        .sensor-card { 
-            grid-column: span 2; 
+        .top-panels {
+            grid-column: span 2;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            width: 100%;
+        }
+
+        .header-card { 
             background: var(--panel-bg); 
-            padding: 25px; 
+            padding: 20px; 
             border-radius: 15px; 
-            border-left: 5px solid var(--info);
+            border-bottom: 4px solid var(--info);
             text-align: center;
             box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            transition: border-color 0.4s ease;
+            transition: all 0.3s ease;
         }
-        .dist-label { font-size: 0.9rem; color: #888; text-transform: uppercase; margin-bottom: 5px; }
-        .dist-value { font-size: 3.5rem; font-weight: 800; color: var(--info); font-family: monospace; transition: color 0.4s ease; }
+
+        .dist-label { font-size: 0.8rem; color: #888; text-transform: uppercase; margin-bottom: 5px; font-weight: bold; }
+        .dist-value { font-size: 2.5rem; font-weight: 800; color: var(--info); font-family: monospace; }
+        
+        .status-text { font-size: 1.5rem; font-weight: 700; margin-top: 10px; text-transform: uppercase; min-height: 1.8rem; }
 
         .card { 
             background: var(--panel-bg); 
@@ -104,7 +113,6 @@ HTML_TEMPLATE = """
         }
         h2 { font-size: 1rem; color: var(--neon-orange); border-bottom: 1px solid #333; padding-bottom: 10px; margin-top: 0; }
 
-        /* Controles Direccionales */
         .grid-controls { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 20px; }
         .btn { 
             background: #2a2a2a; 
@@ -113,22 +121,26 @@ HTML_TEMPLATE = """
             padding: 15px; 
             border-radius: 8px; 
             cursor: pointer; 
+            font-size: 1.2rem;
             font-weight: bold; 
             transition: 0.2s;
             touch-action: manipulation;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
         .btn:hover { border-color: var(--neon-orange); }
         .btn:active { background: var(--neon-orange); color: black; transform: scale(0.95); }
-        .btn-stop { background: var(--danger); border: none; }
+        .btn-stop { background: var(--danger); border: none; font-size: 0.8rem; }
         .btn-stop:hover { background: #c0392b; }
+        .btn-reset { font-size: 0.7rem; }
 
-        /* Sliders de Motores y Velocidad */
         .motor-row { display: flex; align-items: center; gap: 15px; margin: 15px 0; background: #222; padding: 10px; border-radius: 8px; }
         .motor-label { width: 30px; font-weight: bold; color: #777; font-size: 0.8rem; }
         .speed-label-full { flex: 1; font-weight: bold; color: var(--neon-orange); text-transform: uppercase; font-size: 0.75rem; }
         
         input[type=range] { flex: 1; accent-color: var(--neon-orange); cursor: pointer; }
-        .motor-val { width: 45px; text-align: right; color: var(--neon-orange); font-family: monospace; font-weight: bold; }
+        .motor-val { width: 60px; text-align: right; color: var(--neon-orange); font-family: monospace; font-weight: bold; }
 
         .btn-apply { 
             width: 100%; 
@@ -144,11 +156,10 @@ HTML_TEMPLATE = """
             transition: 0.2s;
             margin-top: auto;
         }
-        .btn-apply:active { transform: scale(0.98); background: #27ae60; }
 
         @media (max-width: 768px) { 
             .container { grid-template-columns: 1fr; } 
-            .sensor-card { grid-column: span 1; } 
+            .top-panels { grid-template-columns: 1fr; }
         }
     </style>
 </head>
@@ -157,37 +168,43 @@ HTML_TEMPLATE = """
     <h1>Robot <b>OS</b></h1>
 
     <div class="container">
-        <!-- Sensor Ultrasónico -->
-        <div class="sensor-card" id="sensor-card">
-            <div class="dist-label" id="status-label">Sistema Listo</div>
-            <div class="dist-value">
-                <span id="dist-display">--</span> 
-                <small style="font-size: 1rem; color: #555;">cm</small>
+        <div class="top-panels">
+            <!-- Sensor Ultrasónicos -->
+            <div class="header-card" id="dist-card">
+                <div class="dist-label">📡 Ultrasonidos</div>
+                <div class="dist-value">
+                    <span id="dist-display">--</span> 
+                    <small style="font-size: 1rem; color: #555;">cm</small>
+                </div>
+            </div>
+
+            <!-- Estado Detallado del Robot -->
+            <div class="header-card" id="status-card">
+                <div class="dist-label">🤖 Estado del Sistema</div>
+                <div class="status-text" id="status-display">Cargando...</div>
             </div>
         </div>
 
-        <!-- Panel de Movimientos Predefinidos -->
         <div class="card">
             <h2>Movimientos Rápidos</h2>
             <div class="grid-controls">
                 <button class="btn" onclick="apiMove('diag_fl')">◤</button>
-                <button class="btn" onclick="apiMove('forward')">UP</button>
+                <button class="btn" onclick="apiMove('forward')">▲</button>
                 <button class="btn" onclick="apiMove('diag_fr')">◥</button>
                 
-                <button class="btn" onclick="apiMove('lateral_left')">LEFT</button>
+                <button class="btn" onclick="apiMove('lateral_left')">◀</button>
                 <button class="btn btn-stop" onclick="apiMove('stop')">STOP</button>
-                <button class="btn" onclick="apiMove('lateral_right')">RIGHT</button>
+                <button class="btn" onclick="apiMove('lateral_right')">▶</button>
                 
                 <button class="btn" onclick="apiMove('diag_bl')">◣</button>
-                <button class="btn" onclick="apiMove('backward')">DOWN</button>
+                <button class="btn" onclick="apiMove('backward')">▼</button>
                 <button class="btn" onclick="apiMove('diag_br')">◢</button>
                 
                 <button class="btn" onclick="apiMove('rotate_ccw')">↺</button>
-                <button class="btn" onclick="resetUI()">RESET</button>
+                <button class="btn btn-reset" onclick="resetUI()">RESET</button>
                 <button class="btn" onclick="apiMove('rotate_cw')">↻</button>
             </div>
 
-            <!-- Slider de Velocidad Global -->
             <div class="motor-row" style="background: #2a2a2a; border: 1px solid #444;">
                 <div class="speed-label-full">Velocidad crucero</div>
                 <input type="range" id="global-speed" min="0" max="4095" value="600" oninput="updateGlobalSpeed(this.value)">
@@ -195,26 +212,20 @@ HTML_TEMPLATE = """
             </div>
         </div>
 
-        <!-- Panel de Potencia de Motores -->
         <div class="card">
-            <h2>Motores Individuales</h2>
-            <div id="motor-sliders">
-                <!-- M1-M4 generados por JS -->
-            </div>
+            <h2>Motores Individuales (-4095 a 4095)</h2>
+            <div id="motor-sliders"></div>
             <button class="btn-apply" onclick="applyPotency()">APLICAR CONFIGURACIÓN</button>
         </div>
     </div>
 
     <script>
-        let stoppedLocally = true;
-
-        // Generación de controles de motor
         const sliderContainer = document.getElementById('motor-sliders');
         for(let i=1; i<=4; i++) {
             sliderContainer.innerHTML += `
                 <div class="motor-row">
                     <div class="motor-label">M${i}</div>
-                    <input type="range" id="m${i}" min="-1000" max="1000" value="0" oninput="document.getElementById('v${i}').innerText=this.value">
+                    <input type="range" id="m${i}" min="-4095" max="4095" value="0" oninput="document.getElementById('v${i}').innerText=this.value">
                     <div class="motor-val" id="v${i}">0</div>
                 </div>`;
         }
@@ -227,26 +238,19 @@ HTML_TEMPLATE = """
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({speed: parseInt(val)})
                 });
-            } catch(e) { console.error("Error actualizando velocidad", e); }
+            } catch(e) { console.error(e); }
         }
 
         async function apiMove(cmd) {
-            stoppedLocally = (cmd === 'stop');
-            try { await fetch('/move/' + cmd, { method: 'POST' }); } 
-            catch(e) { console.error("Error en API", e); }
+            try { await fetch('/move/' + cmd, { method: 'POST' }); } catch(e) { console.error(e); }
         }
 
         async function applyPotency() {
-            stoppedLocally = false;
-            const speeds = {
-                s1: document.getElementById('m1').value,
-                s2: document.getElementById('m2').value,
-                s3: document.getElementById('m3').value,
-                s4: document.getElementById('m4').value
-            };
-            try {
-                await fetch(`/free_move?s1=${speeds.s1}&s2=${speeds.s2}&s3=${speeds.s3}&s4=${speeds.s4}`, {method: 'POST'});
-            } catch(e) { console.error("Error en applyPotency", e); }
+            const s1 = document.getElementById('m1').value;
+            const s2 = document.getElementById('m2').value;
+            const s3 = document.getElementById('m3').value;
+            const s4 = document.getElementById('m4').value;
+            try { await fetch(`/free_move?s1=${s1}&s2=${s2}&s3=${s3}&s4=${s4}`, {method: 'POST'}); } catch(e) { console.error(e); }
         }
 
         function resetUI() {
@@ -257,42 +261,44 @@ HTML_TEMPLATE = """
             apiMove('stop');
         }
 
-        // Bucle de actualización del sensor y colores dinámicos
         setInterval(async () => {
             try {
                 const res = await fetch('/status');
                 const data = await res.json();
                 
-                const display = document.getElementById('dist-display');
-                const card = document.getElementById('sensor-card');
-                const statusLabel = document.getElementById('status-label');
+                const distDisplay = document.getElementById('dist-display');
+                const statusDisplay = document.getElementById('status-display');
+                const distCard = document.getElementById('dist-card');
+                const statusCard = document.getElementById('status-card');
                 const dist = data.distance;
 
-                display.innerText = dist.toFixed(1);
+                distDisplay.innerText = dist.toFixed(1);
 
-                if (stoppedLocally) {
-                    card.style.borderColor = "var(--danger)";
-                    display.style.color = "var(--danger)";
-                    statusLabel.innerText = "Robot Parado";
+                // Colores Sensor
+                if (dist > 30) {
+                    distDisplay.style.color = "var(--info)";
+                    distCard.style.borderColor = "var(--info)";
+                } else if (dist <= 30 && dist > 15) {
+                    distDisplay.style.color = "var(--warning)";
+                    distCard.style.borderColor = "var(--warning)";
                 } else {
-                    if (dist > 30) {
-                        card.style.borderColor = "var(--success)";
-                        display.style.color = "var(--info)";
-                        statusLabel.innerText = "Camino Libre";
-                    } else if (dist <= 30 && dist > 15) {
-                        card.style.borderColor = "var(--warning)";
-                        display.style.color = "var(--warning)";
-                        statusLabel.innerText = "Obstáculo Cercano";
-                    } else {
-                        card.style.borderColor = "var(--danger)";
-                        display.style.color = "var(--danger)";
-                        statusLabel.innerText = "¡Peligro de Colisión!";
-                    }
+                    distDisplay.style.color = "var(--danger)";
+                    distCard.style.borderColor = "var(--danger)";
                 }
-            } catch(e) { console.error("Error polling sensor", e); }
-        }, 500);
 
-        // Control por teclado
+                // Texto y Colores de Estado
+                statusDisplay.innerText = data.status;
+                if (data.status === "Parado") {
+                    statusDisplay.style.color = "var(--danger)";
+                    statusCard.style.borderColor = "var(--danger)";
+                } else {
+                    statusDisplay.style.color = "var(--success)";
+                    statusCard.style.borderColor = "var(--success)";
+                }
+
+            } catch(e) { console.error(e); }
+        }, 400);
+
         document.addEventListener('keydown', (e) => {
             if (e.repeat) return;
             const map = {
@@ -326,9 +332,28 @@ def set_global_speed():
 
 @app.route('/move/<direction>', methods=['POST'])
 def move_robot(direction):
-    global current_global_speed
+    global current_global_speed, current_status
     speed = current_global_speed
     
+    # Mapeo de comandos a etiquetas legibles
+    status_map = {
+        'forward': "Adelante",
+        'backward': "Atrás",
+        'left': "Giro Izquierda",
+        'right': "Giro Derecha",
+        'stop': "Parado",
+        'lateral_left': "Lateral Izquierda",
+        'lateral_right': "Lateral Derecha",
+        'diag_fl': "Diagonal Front-Izq",
+        'diag_fr': "Diagonal Front-Der",
+        'diag_bl': "Diagonal Atrás-Izq",
+        'diag_br': "Diagonal Atrás-Der",
+        'rotate_cw': "Rotación Horaria",
+        'rotate_ccw': "Rotación Anti-Horaria"
+    }
+    
+    current_status = status_map.get(direction, "En marcha")
+
     if direction == 'forward': robot_controller.forward(speed)
     elif direction == 'backward': robot_controller.backward(speed)
     elif direction == 'left': robot_controller.turn_left(speed)
@@ -342,21 +367,33 @@ def move_robot(direction):
     elif direction == 'diag_br': robot_controller.backward_right_diagonal_movement(speed)
     elif direction == 'rotate_cw': robot_controller.clockwise_turn(speed)
     elif direction == 'rotate_ccw': robot_controller.counterclockwise_turn(speed)
+    
     return jsonify({"status": "ok"})
 
 @app.route('/free_move', methods=['POST'])
 def free_move():
+    global current_status
     s1 = int(request.args.get('s1', 0))
     s2 = int(request.args.get('s2', 0))
     s3 = int(request.args.get('s3', 0))
     s4 = int(request.args.get('s4', 0))
+    
+    if s1 == 0 and s2 == 0 and s3 == 0 and s4 == 0:
+        current_status = "Parado"
+    else:
+        current_status = "Manual (Personalizado)"
+        
     robot_controller.free(s1, s2, s3, s4)
     return jsonify({"status": "ok"})
 
 @app.route('/status')
 def status():
+    global current_status
     dist = getattr(robot_controller, 'distance', -1)
-    return jsonify({"distance": dist})
+    return jsonify({
+        "distance": dist,
+        "status": current_status
+    })
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
