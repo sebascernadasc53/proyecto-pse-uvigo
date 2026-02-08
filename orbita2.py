@@ -6,64 +6,41 @@ ultrasonic = Ultrasonic()
 PWM = Ordinary_Car()
 
 D_TARGET = 40  # Distancia deseada al objeto (cm)
-TOL= 5
-SPEED = 800
+TOL = 5
+Speed = [-400,4000,400,-4000]
 def verificar_objeto():
     print("Analizando orbitabilidad...")
     lecturas = []
     for _ in range (5):
+        PWM.set_motor_model(Speed[0], Speed[1], Speed[2], Speed[3]) #orbita
+        time.sleep(0.3)
         d = ultrasonic.get_distance()
         if d: lecturas.append(d)
-        time.sleep(0.1)
+        time.sleep(0.5)
     if len(lecturas) < 3:
-        print(f"No hay suficientes lecturas {(len(lecturas))} para verificar el objeto")
+        print(f"No hay suficientes lecturas, {(len(lecturas))},para verificar el objeto")
         return False
-    
-
-
-def stop_robot():
-    PWM.set_motor_model(0, 0, 0, 0)
-
-try:
+    if max(lecturas) >=D_TARGET + TOL or min(lecturas) < D_TARGET - TOL:
+        print("No orbitable")
+        return False
+    else:
+        print("Orbitable")
+        return True
+def orbitar_objeto():
+    while True:
+        PWM.set_motor_model(Speed[0], Speed[1], Speed[2], Speed[3])
+try: #bucle principal, buscar objeto
     while True:
         dist = ultrasonic.get_distance()
-        
-        if dist is None:
-            continue
-
-        print(f"Distancia: {dist} cm")
-
         if dist > D_TARGET + TOL:
-            print("Buscando objeto...")
-            PWM.set_motor_model(-SPEED,-SPEED, -SPEED, -SPEED)
-
-        elif dist < D_TARGET:
-
-            print("Demasiado cerca, alejándose")
-            PWM.set_motor_model(SPEED, SPEED, SPEED, SPEED)
-            
+            PWM.set_motor_model(-1000,-1000,-1000,-1000)
+            print("Buscando objetivo")
+        if dist < D_TARGET - TOL:
+            PWM.set_motor_model(1000,1000,1000,1000)
+            print("Demasiado cerca, retrocediendo")
         else:
-
-            print("Deteniendo para verificar...")
-# verificacion
             if verificar_objeto():
-                print("Objeto orbitable. Iniciando órbita...")
-                while True:
-                    d_actual = ultrasonic.get_distance()
-                    if d_actual is None or d_actual > D_TARGET + 20:
-                        print("Objeto perdido durante la órbita")
-                        break
-                    
-                    # Órbita sentido horario
-                    # Ajustar valores segun respuesta del robot
-                    PWM.set_motor_model(SPEED, -SPEED//2, -SPEED//2, SPEED)
-            else:
-                print("Objeto inestable o demasiado pequeño. Reintentando...")
-                # Pequeño giro para buscar por otro lado
-                PWM.set_motor_model(500, 500, -500, -500)
-                time.sleep(0.3)
-
+                orbitar_objeto()
 except KeyboardInterrupt:
+    print("Abortando programa")
     PWM.set_motor_model(0,0,0,0)
-    print("Programa detenido")
-            
