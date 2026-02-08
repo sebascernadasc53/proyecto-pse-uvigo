@@ -20,7 +20,7 @@ def verificar_objeto():
     if len(lecturas) < 3:
         print(f"No hay suficientes lecturas, {(len(lecturas))},para verificar el objeto")
         return False
-    if max(lecturas) >=D_TARGET + TOL or min(lecturas) < D_TARGET - TOL:
+    elif max(lecturas) >=D_TARGET + TOL or min(lecturas) < D_TARGET - TOL:
         print("No orbitable")
         return False
     else:
@@ -28,14 +28,20 @@ def verificar_objeto():
         return True
 def orbitar_objeto():
     while True:
+        d = ultrasonic.get_distance()
         PWM.set_motor_model(Speed[0], Speed[1], Speed[2], Speed[3])
+        if d >=D_TARGET + 2*TOL or d < D_TARGET - 2*TOL:
+            print("Órbita perdida")
+            PWM.set_motor_model(0,0,0,0)
+            break
+        
 try: #bucle principal, buscar objeto
     while True:
-        dist = ultrasonic.get_distance()
-        if dist > D_TARGET + TOL:
+        d = ultrasonic.get_distance()
+        if d > D_TARGET + TOL:
             PWM.set_motor_model(-1000,-1000,-1000,-1000)
             print("Buscando objetivo")
-        if dist < D_TARGET - TOL:
+        elif d < D_TARGET - TOL:
             PWM.set_motor_model(1000,1000,1000,1000)
             print("Demasiado cerca, retrocediendo")
         else:
