@@ -254,10 +254,18 @@ HTML_TEMPLATE = """
         }
 
         function resetUI() {
+            // Reset motores individuales
             for(let i=1; i<=4; i++) {
                 document.getElementById('m'+i).value = 0;
                 document.getElementById('v'+i).innerText = 0;
             }
+            
+            // Reset velocidad crucero
+            const defaultSpeed = 600;
+            const globalSlider = document.getElementById('global-speed');
+            globalSlider.value = defaultSpeed;
+            updateGlobalSpeed(defaultSpeed);
+            
             apiMove('stop');
         }
 
