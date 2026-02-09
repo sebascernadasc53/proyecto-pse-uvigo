@@ -23,10 +23,10 @@ try:
             print(f"d={dist} cm ¡Objeto detectado! Frenando...")
             v=0
             
-        rover1.motores(int(-v))
+        rover1.forward(int(-v))
         time.sleep(0.01)
 
 except KeyboardInterrupt:
     print("\nFinalizando ejecución...")
 finally:
-    rover1.finalizar()
+    rover1.close()

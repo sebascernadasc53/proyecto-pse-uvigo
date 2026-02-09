@@ -2,6 +2,7 @@ from flask import Flask, render_template_string, request, jsonify
 import time
 import threading
 import random
+import sys
 
 # Intentamos importar la clase Robot del archivo del usuario (robot.py)
 try:
@@ -21,7 +22,6 @@ except ImportError:
 
         def _simulate_sensor(self):
             while self._running:
-                # Simula una distancia entre 5cm y 50cm
                 self.distance = random.uniform(5.0, 50.0)
                 time.sleep(1)
 
@@ -38,13 +38,24 @@ except ImportError:
         def backward_right_diagonal_movement(self, speed=600): print("Mock: Diagonal Der-Atrás")
         def clockwise_turn(self, speed=600): print("Mock: Rotar Horario")
         def counterclockwise_turn(self, speed=600): print("Mock: Rotar Anti-Horario")
-        def free(self, s1, s2, s3, s4): print(f"Mock: Motores libres M1:{s1} M2:{s2} M3:{s3} M4:{s4}")
+        def free(self, s1, s2, s3, s4): print(f"Mock: Motores libres FL:{s1} RL:{s2} FR:{s3} RR:{s4}")
+        def close(self): self._running = False
 
 app = Flask(__name__)
 
-robot_controller = Robot()
+# Pequeña pausa para asegurar que los pines se liberen de procesos anteriores
+if ROBOT_REAL:
+    time.sleep(0.5)
+
+try:
+    robot_controller = Robot()
+except Exception as e:
+    print(f"Error crítico al inicializar el Robot: {e}")
+    print("Sugerencia: Ejecuta 'sudo killall python3' si el puerto GPIO está ocupado.")
+    sys.exit(1)
+
 current_global_speed = 600 
-current_status = "Parado" # Variable global para rastrear el texto del estado
+current_status = "Parado"
 
 HTML_TEMPLATE = """
 <!DOCTYPE html>
@@ -136,7 +147,7 @@ HTML_TEMPLATE = """
         .btn-reset { font-size: 0.7rem; }
 
         .motor-row { display: flex; align-items: center; gap: 15px; margin: 15px 0; background: #222; padding: 10px; border-radius: 8px; }
-        .motor-label { width: 30px; font-weight: bold; color: #777; font-size: 0.8rem; }
+        .motor-label { width: 40px; font-weight: bold; color: #777; font-size: 0.8rem; }
         .speed-label-full { flex: 1; font-weight: bold; color: var(--neon-orange); text-transform: uppercase; font-size: 0.75rem; }
         
         input[type=range] { flex: 1; accent-color: var(--neon-orange); cursor: pointer; }
@@ -169,7 +180,6 @@ HTML_TEMPLATE = """
 
     <div class="container">
         <div class="top-panels">
-            <!-- Sensor Ultrasónicos -->
             <div class="header-card" id="dist-card">
                 <div class="dist-label">📡 Ultrasonidos</div>
                 <div class="dist-value">
@@ -178,7 +188,6 @@ HTML_TEMPLATE = """
                 </div>
             </div>
 
-            <!-- Estado Detallado del Robot -->
             <div class="header-card" id="status-card">
                 <div class="dist-label">🤖 Estado del Sistema</div>
                 <div class="status-text" id="status-display">Cargando...</div>
@@ -220,11 +229,13 @@ HTML_TEMPLATE = """
     </div>
 
     <script>
+        const motorNames = { 1: "FL", 2: "RL", 3: "FR", 4: "RR" };
+
         const sliderContainer = document.getElementById('motor-sliders');
         for(let i=1; i<=4; i++) {
             sliderContainer.innerHTML += `
                 <div class="motor-row">
-                    <div class="motor-label">M${i}</div>
+                    <div class="motor-label" title="Motor ${i}">${motorNames[i]}</div>
                     <input type="range" id="m${i}" min="-4095" max="4095" value="0" oninput="document.getElementById('v${i}').innerText=this.value">
                     <div class="motor-val" id="v${i}">0</div>
                 </div>`;
@@ -254,18 +265,14 @@ HTML_TEMPLATE = """
         }
 
         function resetUI() {
-            // Reset motores individuales
             for(let i=1; i<=4; i++) {
                 document.getElementById('m'+i).value = 0;
                 document.getElementById('v'+i).innerText = 0;
             }
-            
-            // Reset velocidad crucero
             const defaultSpeed = 600;
             const globalSlider = document.getElementById('global-speed');
             globalSlider.value = defaultSpeed;
             updateGlobalSpeed(defaultSpeed);
-            
             apiMove('stop');
         }
 
@@ -273,7 +280,6 @@ HTML_TEMPLATE = """
             try {
                 const res = await fetch('/status');
                 const data = await res.json();
-                
                 const distDisplay = document.getElementById('dist-display');
                 const statusDisplay = document.getElementById('status-display');
                 const distCard = document.getElementById('dist-card');
@@ -282,7 +288,6 @@ HTML_TEMPLATE = """
 
                 distDisplay.innerText = dist.toFixed(1);
 
-                // Colores Sensor
                 if (dist > 30) {
                     distDisplay.style.color = "var(--info)";
                     distCard.style.borderColor = "var(--info)";
@@ -294,7 +299,6 @@ HTML_TEMPLATE = """
                     distCard.style.borderColor = "var(--danger)";
                 }
 
-                // Texto y Colores de Estado
                 statusDisplay.innerText = data.status;
                 if (data.status === "Parado") {
                     statusDisplay.style.color = "var(--danger)";
@@ -342,26 +346,15 @@ def set_global_speed():
 def move_robot(direction):
     global current_global_speed, current_status
     speed = current_global_speed
-    
-    # Mapeo de comandos a etiquetas legibles
     status_map = {
-        'forward': "Adelante",
-        'backward': "Atrás",
-        'left': "Giro Izquierda",
-        'right': "Giro Derecha",
-        'stop': "Parado",
-        'lateral_left': "Lateral Izquierda",
-        'lateral_right': "Lateral Derecha",
-        'diag_fl': "Diagonal Front-Izq",
-        'diag_fr': "Diagonal Front-Der",
-        'diag_bl': "Diagonal Atrás-Izq",
-        'diag_br': "Diagonal Atrás-Der",
-        'rotate_cw': "Rotación Horaria",
+        'forward': "Adelante", 'backward': "Atrás", 'left': "Giro Izquierda",
+        'right': "Giro Derecha", 'stop': "Parado", 'lateral_left': "Lateral Izquierda",
+        'lateral_right': "Lateral Derecha", 'diag_fl': "Diagonal Front-Izq",
+        'diag_fr': "Diagonal Front-Der", 'diag_bl': "Diagonal Atrás-Izq",
+        'diag_br': "Diagonal Atrás-Der", 'rotate_cw': "Rotación Horaria",
         'rotate_ccw': "Rotación Anti-Horaria"
     }
-    
     current_status = status_map.get(direction, "En marcha")
-
     if direction == 'forward': robot_controller.forward(speed)
     elif direction == 'backward': robot_controller.backward(speed)
     elif direction == 'left': robot_controller.turn_left(speed)
@@ -375,7 +368,6 @@ def move_robot(direction):
     elif direction == 'diag_br': robot_controller.backward_right_diagonal_movement(speed)
     elif direction == 'rotate_cw': robot_controller.clockwise_turn(speed)
     elif direction == 'rotate_ccw': robot_controller.counterclockwise_turn(speed)
-    
     return jsonify({"status": "ok"})
 
 @app.route('/free_move', methods=['POST'])
@@ -385,12 +377,7 @@ def free_move():
     s2 = int(request.args.get('s2', 0))
     s3 = int(request.args.get('s3', 0))
     s4 = int(request.args.get('s4', 0))
-    
-    if s1 == 0 and s2 == 0 and s3 == 0 and s4 == 0:
-        current_status = "Parado"
-    else:
-        current_status = "Manual (Personalizado)"
-        
+    current_status = "Parado" if (s1==s2==s3==s4==0) else "Manual (Personalizado)"
     robot_controller.free(s1, s2, s3, s4)
     return jsonify({"status": "ok"})
 
@@ -398,10 +385,15 @@ def free_move():
 def status():
     global current_status
     dist = getattr(robot_controller, 'distance', -1)
-    return jsonify({
-        "distance": dist,
-        "status": current_status
-    })
+    return jsonify({"distance": dist, "status": current_status})
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    try:
+        app.run(host='0.0.0.0', port=5000, debug=False, use_reloader=False)
+    finally:
+        # Aseguramos que al cerrar el servidor se intenten liberar recursos
+        print("Cerrando controlador...")
+        if hasattr(robot_controller, 'stop'):
+            robot_controller.stop()
+        if hasattr(robot_controller, 'close'):
+            robot_controller.close()

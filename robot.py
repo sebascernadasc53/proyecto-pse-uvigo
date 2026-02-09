@@ -56,47 +56,47 @@ class Robot:
             self.infrared_readings['right'] = self.infrared.read_one_infrared(3)
             time.sleep(0.05)
     
-    def read_Adc():
-    '''Lectura de los sensores ADC'''
-    adc = ADC()
-    try:
-        print ("Leyendo ADC ...")
-        while True:
-            #fotoresistencia izquierda
-            Left = adc.read_adc(0)
-            print (f"Fotoresistencia izq: V = {Left} V")
-            #fotoresistencia derecha
-            Right = adc.read_adc(1)
-            print (f"Fotoresistencia dcha: V = {Right} V")
-            #batería
-            Battery = adc.read_adc(2) * (3 if adc.pcb_version == 1 else 2)
-            print (f"Batería: V = {Battery} V")
-            #lectura cada 1 s
-            print ('================================================')
-            time.sleep(1)
-    except KeyboardInterrupt:
-        print ("\nEnd of program")
+    def read_Adc(self):
+        '''Lectura de los sensores ADC'''
+        adc = ADC()
+        try:
+            print ("Leyendo ADC ...")
+            while True:
+                #fotoresistencia izquierda
+                Left = adc.read_adc(0)
+                print (f"Fotoresistencia izq: V = {Left} V")
+                #fotoresistencia derecha
+                Right = adc.read_adc(1)
+                print (f"Fotoresistencia dcha: V = {Right} V")
+                #batería
+                Battery = adc.read_adc(2) * (3 if adc.pcb_version == 1 else 2)
+                print (f"Batería: V = {Battery} V")
+                #lectura cada 1 s
+                print ('================================================')
+                time.sleep(1)
+        except KeyboardInterrupt:
+            print ("\nEnd of program")
 
-def read_Infrared():
-    '''Lectura de los  infrarrojos'''
-    infrared = Infrared()
-    try:
-        while True:
-            #LECTURAS
-            IR_centro = infrared.read_one_infrared(1)
-            IR_izquierda = infrared.read_one_infrared(2)
-            IR_derecha = infrared.read_one_infrared(3)
-            #MOSTRAR LECTURAS
-            if IR_centro != 1 and IR_izquierda == 1 and IR_derecha != 1:
-                print ('Infrarrojos CENTRO')
-            elif IR_centro != 1 and IR_izquierda != 1 and IR_derecha == 1:
-                print ('Infrarrojos DERECHA')
-            elif IR_centro == 1 and IR_izquierda != 1 and IR_derecha != 1:
-                print ('Infrarrojos IZQUIERDA')
-            print("========================================")
-    except KeyboardInterrupt:
-        infrared.close()
-        print("\nEnd of program")
+    def read_Infrared(self):
+        '''Lectura de los  infrarrojos'''
+        infrared = Infrared()
+        try:
+            while True:
+                #LECTURAS
+                IR_centro = infrared.read_one_infrared(1)
+                IR_izquierda = infrared.read_one_infrared(2)
+                IR_derecha = infrared.read_one_infrared(3)
+                #MOSTRAR LECTURAS
+                if IR_centro != 1 and IR_izquierda == 1 and IR_derecha != 1:
+                    print ('Infrarrojos CENTRO')
+                elif IR_centro != 1 and IR_izquierda != 1 and IR_derecha == 1:
+                    print ('Infrarrojos DERECHA')
+                elif IR_centro == 1 and IR_izquierda != 1 and IR_derecha != 1:
+                    print ('Infrarrojos IZQUIERDA')
+                print("========================================")
+        except KeyboardInterrupt:
+            infrared.close()
+            print("\nEnd of program")
     
     def forward(self,speed=600):
         # Avanza hacia delante
@@ -149,6 +149,7 @@ def read_Infrared():
     def backward_right_diagonal_movement(self,speed=600):
         #Movimiento diagonal a la derecha hacia atrás
         self.PWM.set_motor_model(speed,0,0,speed)
+
     def clockwise_orbit(self):
         #orbita horaria
         self.PWM.set_motor_model(400,-4000,-400,4000)
