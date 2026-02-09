@@ -77,26 +77,26 @@ class Robot:
         except KeyboardInterrupt:
             print ("\nEnd of program")
 
-def read_Infrared(self):
-    '''Lectura de los  infrarrojos'''
-    infrared = Infrared()
-    try:
-        while True:
-            #LECTURAS
-            IR_centro = infrared.read_one_infrared(1)
-            IR_izquierda = infrared.read_one_infrared(2)
-            IR_derecha = infrared.read_one_infrared(3)
-            #MOSTRAR LECTURAS
-            if IR_centro != 1 and IR_izquierda == 1 and IR_derecha != 1:
-                print ('Infrarrojos CENTRO')
-            elif IR_centro != 1 and IR_izquierda != 1 and IR_derecha == 1:
-                print ('Infrarrojos DERECHA')
-            elif IR_centro == 1 and IR_izquierda != 1 and IR_derecha != 1:
-                print ('Infrarrojos IZQUIERDA')
-            print("========================================")
-    except KeyboardInterrupt:
-        infrared.close()
-        print("\nEnd of program")
+    def read_Infrared(self):
+        '''Lectura de los  infrarrojos'''
+        infrared = Infrared()
+        try:
+            while True:
+                #LECTURAS
+                IR_centro = infrared.read_one_infrared(1)
+                IR_izquierda = infrared.read_one_infrared(2)
+                IR_derecha = infrared.read_one_infrared(3)
+                #MOSTRAR LECTURAS
+                if IR_centro != 1 and IR_izquierda == 1 and IR_derecha != 1:
+                    print ('Infrarrojos CENTRO')
+                elif IR_centro != 1 and IR_izquierda != 1 and IR_derecha == 1:
+                    print ('Infrarrojos DERECHA')
+                elif IR_centro == 1 and IR_izquierda != 1 and IR_derecha != 1:
+                    print ('Infrarrojos IZQUIERDA')
+                print("========================================")
+        except KeyboardInterrupt:
+            infrared.close()
+            print("\nEnd of program")
     
     def forward(self,speed=600):
         # Avanza hacia delante
