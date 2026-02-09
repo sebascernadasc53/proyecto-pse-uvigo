@@ -2,7 +2,7 @@ import time
 from threading import Thread
 from ultrasonic import Ultrasonic
 from servo import Servo
-from moves import Moves
+from robot import Robot 
 
 # variables 
 distance = 150  # distancia medida por ultrasonidos (cm), este solo es un valor inicial luego ya toma el valor del ultrasonido
@@ -83,7 +83,7 @@ def main():
     # Inicialización de hardware
     ultrasonic = Ultrasonic()
     servo = Servo()
-    robot = Moves()
+    robot = Robot()
 
     print("[Config] Centrando servo horizontal...")
     servo.set_servo_pwm('0', 70)
