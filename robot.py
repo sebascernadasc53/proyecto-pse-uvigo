@@ -116,6 +116,13 @@ def read_Infrared():
     def backward_right_diagonal_movement(self,speed=600):
         #Movimiento diagonal a la derecha hacia atrás
         self.PWM.set_motor_model(speed,0,0,speed)
+    def clockwise_orbit(self):
+        #orbita horaria
+        self.PWM.set_motor_model(400,-4000,-400,4000)
+    
+    def counter_clockwise_orbit(self):
+        #orbita antihoraria
+        self.PWM.set_motor_model(-400,4000,400,-4000)
     
     def free(self,speed1,speed2,speed3,speed4):
         #Movimiento libre
