@@ -15,8 +15,8 @@ def hilo_radar(sensor, cuello):
     print("[Sistema] Radar horizontal iniciado (1 servo)")
 
     ANGULO_CENTRO = 70
-    ANGULO_IZQ = ANGULO_CENTRO - 50   # 40°
-    ANGULO_DER = ANGULO_CENTRO + 50   # 100°
+    ANGULO_IZQ = ANGULO_CENTRO - 30   # 40°
+    ANGULO_DER = ANGULO_CENTRO + 30   # 100°
 
     # Barrido continuo izquierda → derecha → izquierda
     recorrido = (
@@ -47,12 +47,12 @@ def hilo_motores(robot):
 
         # CAMINO LIBRE
         if distance > 60:
-            robot.forward(1000)
+            robot.forward(700)
             look_center = False # Radar modo barrido
             
         # PRECAUCIÓN
-        elif 25 < distance <= 60:
-            robot.forward(700)
+        elif 30 < distance <= 60:
+            robot.forward(500)
             look_center = False # Radar modo barrido
         # OBSTÁCULO CERCA → MANIOBRA
         else:
@@ -71,7 +71,7 @@ def hilo_motores(robot):
                 robot.clockwise_turn(800) # Gira sobre sí mismo en sentido horario
                 time.sleep(0.1)
             print("[OK] Camino despejado, reanudando marcha.")
-            time.sleep(0.2)
+            time.sleep(0.05)
             robot.stop()
             time.sleep(0.1)
 
