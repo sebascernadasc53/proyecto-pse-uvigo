@@ -52,11 +52,11 @@ t.start()
 #bucle principal, buscar objeto
 try:
     while True:
-        d = ultrasonic.get_distance()
-        if d > D_TARGET + TOL:
+
+        if distance > D_TARGET + TOL:
             PWM.set_motor_model(-1000,-1000,-1000,-1000)
             print("Buscando objetivo")
-        elif d < D_TARGET - TOL:
+        elif distance < D_TARGET - TOL:
             PWM.set_motor_model(1000,1000,1000,1000)
             print("Demasiado cerca, retrocediendo")
         else:
