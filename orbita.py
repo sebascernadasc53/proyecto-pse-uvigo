@@ -1,6 +1,5 @@
 import time
 from motor import Ordinary_Car 
-from ultrasonic import Ultrasonic
 from threading import Thread
 from robot import Robot
 
@@ -15,18 +14,18 @@ robot = Robot()
 def sensor_thread():
     global distance
     while running:
-        lectura = ultrasonic.get_distance()
+        lectura = robot.distance()
         if lectura is not None:
             distance = lectura
         time.sleep(0.05)
 def verificar_objeto():
     print("Analizando orbitabilidad...")
-    Robot.stop
+    robot.stop
     lecturas = []
     for _ in range (10):
         Robot.counter_clockwise_orbit
         #PWM.set_motor_model(Speed[0], Speed[1], Speed[2], Speed[3]) #orbita
-        Robot.stop
+        robot.stop
         time.sleep(0.3)
         lecturas.append(distance)
         time.sleep(0.3)
@@ -43,7 +42,7 @@ def verificar_objeto():
 def orbitar_objeto():
     for _ in (5):
         print("Orbitando")
-        Robot.counter_clockwise_orbit
+        robot.counter_clockwise_orbit
         #PWM.set_motor_model(Speed[0], Speed[1], Speed[2], Speed[3])
         if distance >=D_TARGET + 2*TOL or distance < D_TARGET - 2*TOL:
             print("Órbita perdida")
@@ -59,7 +58,7 @@ def main():
         while True:
 
             if distance > D_TARGET + 4*TOL:
-                Robot.forward(500)
+                robot.forward(500)
                 print("Buscando objetivo")
 
             elif distance > D_TARGET + 2*TOL:
@@ -74,6 +73,6 @@ def main():
     except KeyboardInterrupt:
         running = False
         print("Abortando programa")
-        Robot.stop
+        robot.stop
 if __name__ == "__main__":
     main()
