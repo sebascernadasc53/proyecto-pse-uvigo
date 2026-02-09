@@ -2,15 +2,15 @@ import time
 from motor import Ordinary_Car 
 from ultrasonic import Ultrasonic
 from threading import Thread
+from robot import Robot
 
 ultrasonic = Ultrasonic()
 PWM = Ordinary_Car()
-distance = 0.0
-D_TARGET = 40  # Distancia deseada al objeto (cm)
-TOL = 5
-Speed = [-400,4000,400,-4000]
+D_TARGET = 50  # Distancia deseada al objeto (cm)
+TOL = 10
+Speed = [-1200,4000,800,-4000]
 running = True
-
+robot = Robot()
  # HILO SENSOR
 def sensor_thread():
     global distance
@@ -21,12 +21,16 @@ def sensor_thread():
         time.sleep(0.05)
 def verificar_objeto():
     print("Analizando orbitabilidad...")
+    Robot.stop
     lecturas = []
-    for _ in range (5):
-        PWM.set_motor_model(Speed[0], Speed[1], Speed[2], Speed[3]) #orbita
+    for _ in range (10):
+        Robot.counter_clockwise_orbit
+        #PWM.set_motor_model(Speed[0], Speed[1], Speed[2], Speed[3]) #orbita
+        Robot.stop
         time.sleep(0.3)
         lecturas.append(distance)
-        time.sleep(0.2)
+        time.sleep(0.3)
+        
     if len(lecturas) < 3:
         print(f"No hay suficientes lecturas, {(len(lecturas))},para verificar el objeto")
         return False
@@ -37,27 +41,32 @@ def verificar_objeto():
         print("Orbitable")
         return True
 def orbitar_objeto():
-    while True:
-        PWM.set_motor_model(Speed[0], Speed[1], Speed[2], Speed[3])
+    for _ in (5):
+        print("Orbitando")
+        Robot.counter_clockwise_orbit
+        #PWM.set_motor_model(Speed[0], Speed[1], Speed[2], Speed[3])
         if distance >=D_TARGET + 2*TOL or distance < D_TARGET - 2*TOL:
             print("Órbita perdida")
-            PWM.set_motor_model(0,0,0,0)
+            Robot.stop
             break
         time.sleep(0.1)
-
+    
 t = Thread(target=sensor_thread)
 t.daemon = True
 t.start()
-
 #bucle principal, buscar objeto
 try:
     while True:
 
-        if distance > D_TARGET + TOL:
-            PWM.set_motor_model(-1000,-1000,-1000,-1000)
+        if distance > D_TARGET + 4*TOL:
+            Robot.forward(500)
             print("Buscando objetivo")
-        elif distance < D_TARGET - TOL:
-            PWM.set_motor_model(1000,1000,1000,1000)
+
+        elif distance > D_TARGET + 2*TOL:
+            PWM.set_motor_model(-300,-300,-300,-300)
+
+        elif distance < D_TARGET - 2*TOL:
+            PWM.set_motor_model(500,500,500,500)
             print("Demasiado cerca, retrocediendo")
         else:
             if verificar_objeto():
@@ -65,4 +74,4 @@ try:
 except KeyboardInterrupt:
     running = False
     print("Abortando programa")
-    PWM.set_motor_model(0,0,0,0)
+    Robot.stop
