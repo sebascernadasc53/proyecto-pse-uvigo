@@ -50,28 +50,30 @@ def orbitar_objeto():
             Robot.stop
             break
         time.sleep(0.1)
-    
-t = Thread(target=sensor_thread)
-t.daemon = True
-t.start()
-#bucle principal, buscar objeto
-try:
-    while True:
+def main():
+    t = Thread(target=sensor_thread)
+    t.daemon = True
+    t.start()
+    #bucle principal, buscar objeto
+    try:
+        while True:
 
-        if distance > D_TARGET + 4*TOL:
-            Robot.forward(500)
-            print("Buscando objetivo")
+            if distance > D_TARGET + 4*TOL:
+                Robot.forward(500)
+                print("Buscando objetivo")
 
-        elif distance > D_TARGET + 2*TOL:
-            PWM.set_motor_model(-300,-300,-300,-300)
+            elif distance > D_TARGET + 2*TOL:
+                PWM.set_motor_model(-300,-300,-300,-300)
 
-        elif distance < D_TARGET - 2*TOL:
-            PWM.set_motor_model(500,500,500,500)
-            print("Demasiado cerca, retrocediendo")
-        else:
-            if verificar_objeto():
-                orbitar_objeto()
-except KeyboardInterrupt:
-    running = False
-    print("Abortando programa")
-    Robot.stop
+            elif distance < D_TARGET - 2*TOL:
+                PWM.set_motor_model(500,500,500,500)
+                print("Demasiado cerca, retrocediendo")
+            else:
+                if verificar_objeto():
+                    orbitar_objeto()
+    except KeyboardInterrupt:
+        running = False
+        print("Abortando programa")
+        Robot.stop
+if __name__ == "__main__":
+    main()
