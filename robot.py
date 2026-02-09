@@ -9,8 +9,22 @@ class Robot:
     def __init__(self):
         self.ultrasonic = Ultrasonic()
         self.PWM = Ordinary_Car()
+        self.adc = ADC()
+        self.infrared = Infrared()
+
         self.distance = 0
+        self.adc_readings = {'left_light': 0, 'right_light': 0, 'battery': 0}
+        self.infrared_readings = {'center': 0, 'left': 0, 'right': 0}
+
         self._running = True
+
+         # El hilo que solo se encarga de ADC
+        self.thread_adc = Thread(target=self.update_adc, daemon=True)
+        self.thread_adc.start()
+
+        # El hilo que solo se encarga de Infrarrojos
+        self.thread_infrared = Thread(target=self.update_infrared, daemon=True)
+        self.thread_infrared.start()
         
         # El hilo solo se encarga de actualizar la lectura del sensor de ultrasonidos
         self.thread = Thread(target=self.update_ultrasonic, daemon=True)
@@ -22,6 +36,25 @@ class Robot:
             if dist is not None:
                 self.distance = dist
             time.sleep(0.01)
+
+    def update_adc(self):
+        while self._running:
+            # Lectura y guardado de datos
+            self.adc_readings['left_light'] = self.adc.read_adc(0)
+            self.adc_readings['right_light'] = self.adc.read_adc(1)
+            
+            # Cálculo de batería según versión de PCB
+            multiplier = 3 if self.adc.pcb_version == 1 else 2
+            self.adc_readings['battery'] = self.adc.read_adc(2) * multiplier
+            
+            time.sleep(0.5) 
+
+    def update_infrared(self):
+        while self._running:
+            self.infrared_readings['center'] = self.infrared.read_one_infrared(2)
+            self.infrared_readings['left'] = self.infrared.read_one_infrared(1)
+            self.infrared_readings['right'] = self.infrared.read_one_infrared(3)
+            time.sleep(0.05)
     
     def read_Adc():
     '''Lectura de los sensores ADC'''
@@ -132,4 +165,6 @@ def read_Infrared():
         #Cerrar los motores
         self.stop()
         self.PWM.close()
-        
+        self.ultrasonic.close()
+        self.infrared.close()
+        self.adc.close()
