@@ -5,9 +5,9 @@ import time
 # --- CONFIGURACIÓN ---
 # Usamos constantes para que sea fácil ajustar la velocidad sin buscar en el código
 VEL_AVANCE = 800      # Velocidad suave para ir recto
-VEL_GIRO_S = 2500     # Giro suave
-VEL_GIRO_F = 4000     # Giro fuerte (para curvas cerradas)
-PAUSA_CICLO = 0.05    # 50ms (equilibrio entre rapidez y estabilidad)
+VEL_GIRO_S = 800     # Giro suave
+VEL_GIRO_F = 800     # Giro fuerte (para curvas cerradas)
+PAUSA_CICLO = 0.001    # 50ms (equilibrio entre rapidez y estabilidad)
 
 # --- INICIALIZACIÓN ---
 car = Ordinary_Car()
@@ -16,44 +16,38 @@ sensores = Infrared()
 print("--- Sistema de Seguimiento de Línea Activo ---")
 print("Presiona Ctrl+C en VS Code para detener el coche.")
 
+# --- Antes del bucle while ---
+ultima_direccion = "centro" 
+
 try:
     while True:
-        # 1. Capturamos la lectura (el número "mágico" del 1 al 7)
         estado = sensores.read_all_infrared()
         
-        # 2. Decidimos el movimiento basado en el número obtenido
-        if estado == 2:
-            # Línea al centro
-            print(f"[{estado}] Recto")
-            car.set_motor_model(VEL_AVANCE, VEL_AVANCE, VEL_AVANCE, VEL_AVANCE)
+        if estado == 2: # Centro
+            car.set_motor_model(-VEL_AVANCE, -VEL_AVANCE, -VEL_AVANCE, -VEL_AVANCE)
+            ultima_direccion = "centro"
             
-        elif estado == 4:
-            # Solo izquierda detecta: corregir girando a la izquierda
-            print(f"[{estado}] Giro Suave Izquierda")
-            car.set_motor_model(-1500, -1500, VEL_GIRO_S, VEL_GIRO_S)
+        elif estado in [4, 6]: # Izquierda
+            car.set_motor_model(VEL_GIRO_S, VEL_GIRO_S, -VEL_GIRO_S, -VEL_GIRO_S)
+            ultima_direccion = "izquierda"
             
-        elif estado == 6:
-            # Izquierda y Centro detectan: giro más agresivo
-            print(f"[{estado}] Giro FUERTE Izquierda")
-            car.set_motor_model(-2000, -2000, VEL_GIRO_F, VEL_GIRO_F)
+        elif estado in [1, 3]: # Derecha
+            car.set_motor_model(-VEL_GIRO_S, -VEL_GIRO_S, VEL_GIRO_S, VEL_GIRO_S)
+            ultima_direccion = "derecha"
             
-        elif estado == 1:
-            # Solo derecha detecta: corregir girando a la derecha
-            print(f"[{estado}] Giro Suave Derecha")
-            car.set_motor_model(VEL_GIRO_S, VEL_GIRO_S, -1500, -1500)
-            
-        elif estado == 3:
-            # Derecha y Centro detectan: giro más agresivo
-            print(f"[{estado}] Giro FUERTE Derecha")
-            car.set_motor_model(VEL_GIRO_F, VEL_GIRO_F, -2000, -2000)
-            
-        else:
-            # Valor 7 (todo negro) o 0 (todo blanco): Paramos por seguridad
-            print(f"[{estado}] Fuera de línea / Parada")
-            car.set_motor_model(0, 0, 0, 0)
+        elif estado == 0: 
+            # En lugar de sleeps, usamos la memoria
+            print("Buscando línea...")
+            if ultima_direccion == "izquierda":
+                # Si se perdió por la izquierda, gira sobre su eje a la izquierda para buscar
+                car.set_motor_model(VEL_GIRO_S, VEL_GIRO_S, -VEL_GIRO_S, -VEL_GIRO_S)
+            elif ultima_direccion == "derecha":
+                car.set_motor_model(-VEL_GIRO_S, -VEL_GIRO_S, VEL_GIRO_S, VEL_GIRO_S)
+            else:
+                # Si no sabe dónde está, retrocede lento
+                car.set_motor_model(400, 400, 400, 400)
 
-        # 3. Espera mínima para que el procesador respire
-        time.sleep(PAUSA_CICLO)
+        time.sleep(PAUSA_CICLO) # Esta es la única pausa que debe existir
 
 except KeyboardInterrupt:
     # Si pulsas el botón de Stop en VS Code o Ctrl+C
