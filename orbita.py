@@ -28,30 +28,32 @@ def verificar_objeto():
     for _ in range (5):
         robot.counter_clockwise_orbit()
         '''PWM.set_motor_model(Speed[0], Speed[1], Speed[2], Speed[3])'''
-        time.sleep(0.3)
+        time.sleep(0.8)
         robot.stop()
-        time.sleep(0.3)
+        time.sleep(1)
         lecturas.append(distance)
-        
+    average = sum(lecturas) / len(lecturas)    
     if len(lecturas) < 3:
         print(f"No hay suficientes lecturas, {(len(lecturas))},para verificar el objeto")
         return False
-    elif max(lecturas) >=D_TARGET + TOL or min(lecturas) < D_TARGET - TOL:
-        print("No orbitable")
-        return False
-    else:
+    elif D_TARGET - TOL <= average <= D_TARGET + TOL:
         print("Orbitable")
         return True
+    else:
+        print("No Orbitable")
+        return False
 #ORBITA
 def orbitar_objeto():
-    
-    print("Orbitando")
-    robot.counter_clockwise_orbit()
-    #PWM.set_motor_model(Speed[0], Speed[1], Speed[2], Speed[3])
-    if distance >=D_TARGET + 2*TOL or distance < D_TARGET - 2*TOL:
-        print("Órbita perdida")
-        robot.stop()
-    time.sleep(0.1)
+    while running:
+        print("Orbitando")
+        robot.counter_clockwise_orbit()
+        #PWM.set_motor_model(Speed[0], Speed[1], Speed[2], Speed[3])
+        if distance >=D_TARGET + 3*TOL or distance < D_TARGET - 3*TOL:
+            print("Órbita perdida")
+            robot.stop()
+            break
+        time.sleep(0.1)
+
 # MAIN
 def main():
     global running
