@@ -1,7 +1,5 @@
 import time
 from threading import Thread
-from ultrasonic import Ultrasonic
-from servo import Servo
 from robot import Robot 
 
 # variables 
@@ -81,17 +79,15 @@ def main():
     global running
 
     # Inicialización de hardware
-    ultrasonic = Ultrasonic()
-    servo = Servo()
     robot = Robot()
 
     print("[Config] Centrando servo horizontal...")
-    servo.set_servo_pwm('0', 70)
-    servo.set_servo_pwm('1', 90)
+    robot.set_servo_pwm('0', 70)
+    robot.set_servo_pwm('1', 90)
     time.sleep(1)
 
     # Hilos
-    t_radar = Thread(target=hilo_radar, args=(ultrasonic, servo), daemon=True)
+    t_radar = Thread(target=hilo_radar, args=(robot, robot), daemon=True)
     t_robot = Thread(target=hilo_motores, args=(robot,), daemon=True)
 
     try:
@@ -110,7 +106,6 @@ def main():
         running = False
         robot.stop()
         robot.close()
-        ultrasonic.close()
         print("[OK] Robot detenido correctamente")
 
 if __name__ == "__main__":
