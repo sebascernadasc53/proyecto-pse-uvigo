@@ -2,6 +2,7 @@ from motor import Ordinary_Car
 from ultrasonic import Ultrasonic
 from infrared import Infrared
 from adc import ADC
+from servo import Servo
 import time
 from threading import Thread
 
@@ -10,6 +11,7 @@ class Robot:
         self.ultrasonic = Ultrasonic()
         self.PWM = Ordinary_Car()
         self.adc = ADC()
+        self.servo = Servo()
         self.infrared = Infrared()
 
         self.distance = 0
@@ -18,7 +20,7 @@ class Robot:
 
         self._running = True
 
-         # El hilo que solo se encarga de ADC
+        # El hilo que solo se encarga de ADC
         self.thread_adc = Thread(target=self.update_adc, daemon=True)
         self.thread_adc.start()
 
@@ -97,6 +99,9 @@ class Robot:
         except KeyboardInterrupt:
             infrared.close()
             print("\nEnd of program")
+            
+    def set_servo(self, channel, angle, error=10):
+        self.servo.set_servo_pwm(str(channel), angle, error)
     
     def forward(self,speed=600):
         # Avanza hacia delante
@@ -168,4 +173,5 @@ class Robot:
         self.PWM.close()
         self.ultrasonic.close()
         self.infrared.close()
+        self.adc.close()
         self.adc.close()
