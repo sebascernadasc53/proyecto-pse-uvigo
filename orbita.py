@@ -15,7 +15,7 @@ robot = Robot()
 def sensor_thread():
     global distance
     while running:
-        lectura = robot.distance()
+        lectura = robot.distance
         if lectura is not None:
             distance = lectura
         time.sleep(0.05)
@@ -28,8 +28,7 @@ def verificar_objeto():
     for _ in range (5):
         robot.counter_clockwise_orbit()
         '''PWM.set_motor_model(Speed[0], Speed[1], Speed[2], Speed[3])'''
-        time.sleep(0.8)
-        robot.stop()
+        
         time.sleep(1)
         lecturas.append(distance)
     average = sum(lecturas) / len(lecturas)    
@@ -60,19 +59,20 @@ def main():
     t = Thread(target=sensor_thread)
     t.daemon = True
     t.start()
+    time.sleep(3)
     #bucle principal, buscar objeto
     try:
         while True:
-
+            print(distance)
             if distance > D_TARGET + 4*TOL:
-                robot.forward(500)
+                robot.forward(800)
                 print("Buscando objetivo")
 
             elif distance > D_TARGET + 2*TOL:
-                robot.forward(300)
+                robot.forward(600)
 
             elif distance < D_TARGET - 2*TOL:
-                robot.backward(500)
+                robot.backward(800)
                 print("Demasiado cerca, retrocediendo")
             else:
                 if verificar_objeto():
