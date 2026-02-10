@@ -161,7 +161,7 @@ class Robot:
     
     def counter_clockwise_orbit(self):
         #orbita antihoraria
-        self.PWM.set_motor_model(-400,4000,400,-4000)
+        self.PWM.set_motor_model(-1200,4000,800,-4000)
     
     def free(self,speed1,speed2,speed3,speed4):
         #Movimiento libre
