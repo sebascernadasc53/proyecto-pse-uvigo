@@ -3,13 +3,12 @@ from threading import Thread
 from robot import Robot 
 
 # variables 
-distance = 150  # distancia medida por ultrasonidos (cm), este solo es un valor inicial luego ya toma el valor del ultrasonido
 running = True
 look_center = False
 
 # Movimiento continuo de la cabeza del robot en horizontal
-def hilo_radar(sensor, cuello):
-    global distance, running, look_center
+def hilo_radar(robot):
+    global running, look_center
     print("[Sistema] Radar horizontal iniciado (1 servo)")
 
     ANGULO_CENTRO = 70
@@ -27,34 +26,33 @@ def hilo_radar(sensor, cuello):
             if not running:
                 break
             if look_center:
-                cuello.set_servo_pwm('0',70)  # Servo horizontal
+                robot.set_servo(0,70)  # Servo horizontal
             else:
-                cuello.set_servo_pwm('0',angulo)
+                robot.set_servo(0,angulo)
 
             time.sleep(0.02)
-            lectura = sensor.get_distance()
-            if lectura is not None:
-                distance = lectura
 
 # Lógica Roomba
 def hilo_motores(robot):
-    global distance, running, look_center
+    global running, look_center
     print("[Sistema] Lógica Roomba activa")
 
     while running:
+        
+        distancia_actual = robot.distance
 
         # CAMINO LIBRE
-        if distance > 60:
+        if distancia_actual > 60:
             robot.forward(700)
             look_center = False # Radar modo barrido
             
         # PRECAUCIÓN
-        elif 30 < distance <= 60:
+        elif 30 < distancia_actual <= 60:
             robot.forward(500)
             look_center = False # Radar modo barrido
         # OBSTÁCULO CERCA → MANIOBRA
         else:
-            print(f"[!] Obstáculo a {distance} cm")
+            print(f"[!] Obstáculo a {distancia_actual} cm")
             
             # Paso 1: Parar el robot indmediatamente
             robot.stop()
@@ -65,9 +63,10 @@ def hilo_motores(robot):
             #time.sleep(0.3)
             
             # Paso 2: Girar hasta que el camino esté despejado (bucle que termina cuando la distancia es mayor que 40 cm)
-            while distance <= 45 and running:
+            while robot.distance <= 45 and running:
                 robot.clockwise_turn(800) # Gira sobre sí mismo en sentido horario
                 time.sleep(0.1)
+            
             print("[OK] Camino despejado, reanudando marcha.")
             time.sleep(0.05)
             robot.stop()
@@ -82,12 +81,12 @@ def main():
     robot = Robot()
 
     print("[Config] Centrando servo horizontal...")
-    robot.set_servo_pwm('0', 70)
-    robot.set_servo_pwm('1', 90)
+    robot.set_servo(0, 70)
+    robot.set_servo(1, 90)
     time.sleep(1)
 
     # Hilos
-    t_radar = Thread(target=hilo_radar, args=(robot, robot), daemon=True)
+    t_radar = Thread(target=hilo_radar, args=(robot,), daemon=True)
     t_robot = Thread(target=hilo_motores, args=(robot,), daemon=True)
 
     try:
@@ -104,6 +103,7 @@ def main():
 
     finally:
         running = False
+        robot._running  = False
         robot.stop()
         robot.close()
         print("[OK] Robot detenido correctamente")
