@@ -174,4 +174,4 @@ class Robot:
         self.ultrasonic.close()
         self.infrared.close()
         self.adc.close()
-        self.adc.close()
+        self.servo.close()
