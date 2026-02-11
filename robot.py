@@ -235,43 +235,44 @@ class Robot:
         en la proximidad reduce la velocidad en un factor 0,6 cuando está muy cerca detiene el robot. 
         No permite movimientos miestras detecte el obstáculo. 
         Hay que lanzar de nuevo el movimiento'''
-        if self.enable_antichoque:
-            if self.distance < 30:
-                self.stop()
-            elif 30 <= self.distance < 60:
-                self.k = 0.6
-                if self.movement == 'forward':
-                    self.forward(int(self.v * self.k))
-                elif self.movement == 'backward':
-                    self.backward(int(self.v * self.k))
-                elif self.movement == 'turn_left':
-                    self.turn_left(int(self.v * self.k))
-                elif self.movement == 'turn_right':
-                    self.turn_right(int(self.v * self.k))
-                elif self.movement == 'clockwise_turn':
-                    self.clockwise_turn(int(self.v * self.k))
-                elif self.movement == 'counterclockwise_turn':
-                    self.counterclockwise_turn(int(self.v * self.k))
-                elif self.movement == 'right_lateral':
-                    self.right_lateral_movement(int(self.v * self.k))
-                elif self.movement == 'left_lateral':
-                    self.left_lateral_movement(int(self.v * self.k))
-                elif self.movement == 'forward_left_diagonal':
-                    self.forward_left_diagonal_movement(int(self.v * self.k))
-                elif self.movement == 'forward_right_diagonal':
-                    self.forward_right_diagonal_movement(int(self.v * self.k))
-                elif self.movement == 'backward_left_diagonal':
-                    self.backward_left_diagonal_movement(int(self.v * self.k))
-                elif self.movement == 'backward_right_diagonal':
-                    self.backward_right_diagonal_movement(int(self.v * self.k))
-                elif self.movement == 'clockwise_orbit':
-                    self.clockwise_orbit() 
-                elif self.movement == 'counter_clockwise_orbit':
-                    self.counter_clockwise_orbit()
-                else:
+        while True:
+            if self.enable_antichoque:
+                if self.distance < 30:
                     self.stop()
-            else:
-                self.k = 1
+                elif 30 <= self.distance < 60:
+                    self.k = 0.6
+                    if self.movement == 'forward':
+                        self.forward(int(self.v * self.k))
+                    elif self.movement == 'backward':
+                        self.backward(int(self.v * self.k))
+                    elif self.movement == 'turn_left':
+                        self.turn_left(int(self.v * self.k))
+                    elif self.movement == 'turn_right':
+                        self.turn_right(int(self.v * self.k))
+                    elif self.movement == 'clockwise_turn':
+                        self.clockwise_turn(int(self.v * self.k))
+                    elif self.movement == 'counterclockwise_turn':
+                        self.counterclockwise_turn(int(self.v * self.k))
+                    elif self.movement == 'right_lateral':
+                        self.right_lateral_movement(int(self.v * self.k))
+                    elif self.movement == 'left_lateral':
+                        self.left_lateral_movement(int(self.v * self.k))
+                    elif self.movement == 'forward_left_diagonal':
+                        self.forward_left_diagonal_movement(int(self.v * self.k))
+                    elif self.movement == 'forward_right_diagonal':
+                        self.forward_right_diagonal_movement(int(self.v * self.k))
+                    elif self.movement == 'backward_left_diagonal':
+                        self.backward_left_diagonal_movement(int(self.v * self.k))
+                    elif self.movement == 'backward_right_diagonal':
+                        self.backward_right_diagonal_movement(int(self.v * self.k))
+                    elif self.movement == 'clockwise_orbit':
+                        self.clockwise_orbit() 
+                    elif self.movement == 'counter_clockwise_orbit':
+                        self.counter_clockwise_orbit()
+                    else:
+                        self.stop()
+                else:
+                    self.k = 1
 
     def close(self):
         #Cerrar los motores
