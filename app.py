@@ -152,7 +152,7 @@ HTML_TEMPLATE = """
             </div>
             <div class="motor-row">
                 <div style="font-size:0.7rem; width:40px">S1 (V)</div>
-                <input type="range" id="s1-slider" min="0" max="180" value="90" oninput="updateServo(1, this.value)">
+                <input type="range" id="s1-slider" min="70" max="175" value="90" oninput="updateServo(1, this.value)">
                 <span id="s1-val" class="input-val" style="padding:2px; min-width:30px; text-align:center">90°</span>
             </div>
             <button class="btn btn-special" style="border-color: var(--info); color: var(--info); margin-top:5px" onclick="centerServos()">🎯 Centrar Cabeza</button>
@@ -238,8 +238,8 @@ HTML_TEMPLATE = """
         const keyMap = {
             'ArrowUp': 'forward', 'w': 'forward', 'W': 'forward',
             'ArrowDown': 'backward', 's': 'backward', 'S': 'backward',
-            'ArrowLeft': 'lateral_left', 'a': 'lateral_left', 'A': 'lateral_left',
-            'ArrowRight': 'lateral_right', 'd': 'lateral_right', 'D': 'lateral_right',
+            'ArrowLeft': 'left', 'a': 'lateral_left', 'A': 'lateral_left',
+            'ArrowRight': 'right', 'd': 'lateral_right', 'D': 'lateral_right',
             'q': 'rotate_ccw', 'Q': 'rotate_ccw',
             'e': 'rotate_cw', 'E': 'rotate_cw',
             ' ': 'stop'
