@@ -109,8 +109,11 @@ HTML_TEMPLATE = """
         .card { background: var(--panel-bg); padding: 20px; border-radius: 15px; border: 1px solid #333; }
         h2 { font-size: 0.9rem; color: var(--neon-orange); border-bottom: 1px solid #333; padding-bottom: 10px; margin-top: 0; text-transform: uppercase; }
         .grid-controls { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 20px; }
-        .btn { background: #2a2a2a; color: white; border: 1px solid #444; padding: 12px; border-radius: 8px; cursor: pointer; font-weight: bold; }
-        .btn:active { background: #333; }
+        .btn { background: #2a2a2a; color: white; border: 1px solid #444; padding: 12px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: all 0.1s; position: relative; }
+        
+        /* Estilo para botón activo (Toggle) */
+        .btn.active { background: var(--neon-orange) !important; color: black !important; border-color: var(--neon-orange) !important; transform: scale(0.98); box-shadow: 0 0 15px rgba(255, 140, 0, 0.4); }
+        
         .btn-stop { background: var(--danger); border: none; font-size: 0.8rem; font-weight: 900; }
         .btn-special { background: #222; color: var(--purple); font-size: 0.8rem; margin-bottom: 8px; width: 100%; border: 1px solid #444; }
         .btn-special:hover { border-color: var(--purple); background: #2a242d; }
@@ -127,7 +130,6 @@ HTML_TEMPLATE = """
 <body>
     <h1>Robot <b>OS</b></h1>
     <div class="container">
-        <!-- Panel de Sensores Superior -->
         <div class="top-stats">
             <div id="dist-card" class="stat-card"><div class="stat-label">📡 Distancia</div><div class="stat-value"><span id="dist-val">--</span><small>cm</small></div></div>
             <div class="stat-card" style="border-color: var(--success)"><div class="stat-label">🔋 Batería</div><div class="stat-value"><span id="batt-val">--</span><small>V</small></div></div>
@@ -139,8 +141,8 @@ HTML_TEMPLATE = """
 
         <div class="card">
             <h2>Movimientos Especiales</h2>
-            <button class="btn btn-special" onclick="apiMove('orbit_cw')">🌀 Órbita Horaria</button>
-            <button class="btn btn-special" onclick="apiMove('orbit_ccw')">🌀 Órbita Antihoraria</button>
+            <button id="btn-orbit_cw" class="btn btn-special" onclick="toggleMove('orbit_cw')">🌀 Órbita Horaria</button>
+            <button id="btn-orbit_ccw" class="btn btn-special" onclick="toggleMove('orbit_ccw')">🌀 Órbita Antihoraria</button>
             
             <h2 style="margin-top:20px;">Control Servos</h2>
             <div class="motor-row">
@@ -159,18 +161,18 @@ HTML_TEMPLATE = """
         <div class="card">
             <h2>Control Maestro | <span id="status-display">--</span></h2>
             <div class="grid-controls">
-                <button class="btn" onclick="apiMove('diag_fl')">◤</button>
-                <button class="btn" onclick="apiMove('forward')">▲</button>
-                <button class="btn" onclick="apiMove('diag_fr')">◥</button>
-                <button class="btn" onclick="apiMove('lateral_left')">◀</button>
-                <button class="btn btn-stop" onclick="apiMove('stop')">STOP</button>
-                <button class="btn" onclick="apiMove('lateral_right')">▶</button>
-                <button class="btn" onclick="apiMove('diag_bl')">◣</button>
-                <button class="btn" onclick="apiMove('backward')">▼</button>
-                <button class="btn" onclick="apiMove('diag_br')">◢</button>
-                <button class="btn" onclick="apiMove('rotate_ccw')">↺</button>
+                <button id="btn-diag_fl" class="btn" onclick="toggleMove('diag_fl')">◤</button>
+                <button id="btn-forward" class="btn" onclick="toggleMove('forward')">▲</button>
+                <button id="btn-diag_fr" class="btn" onclick="toggleMove('diag_fr')">◥</button>
+                <button id="btn-lateral_left" class="btn" onclick="toggleMove('lateral_left')">◀</button>
+                <button id="btn-stop" class="btn btn-stop" onclick="stopAll()">STOP</button>
+                <button id="btn-lateral_right" class="btn" onclick="toggleMove('lateral_right')">▶</button>
+                <button id="btn-diag_bl" class="btn" onclick="toggleMove('diag_bl')">◣</button>
+                <button id="btn-backward" class="btn" onclick="toggleMove('backward')">▼</button>
+                <button id="btn-diag_br" class="btn" onclick="toggleMove('diag_br')">◢</button>
+                <button id="btn-rotate_ccw" class="btn" onclick="toggleMove('rotate_ccw')">↺</button>
                 <button class="btn" style="font-size:0.6rem; color: var(--warning);" onclick="safeRefresh()">REFRESH</button>
-                <button class="btn" onclick="apiMove('rotate_cw')">↻</button>
+                <button id="btn-rotate_cw" class="btn" onclick="toggleMove('rotate_cw')">↻</button>
             </div>
             <div class="motor-row" style="margin-top:15px">
                 <div style="font-size:0.7rem; width:70px">CRUCERO</div>
@@ -197,6 +199,83 @@ HTML_TEMPLATE = """
             </div>`;
         }
 
+        let currentActiveToggle = null;
+
+        // --- LÓGICA DE MOVIMIENTO ---
+
+        async function apiMove(cmd) { 
+            await fetch('/move/' + cmd, { method: 'POST' }); 
+        }
+
+        async function stopAll() {
+            if (currentActiveToggle) {
+                document.getElementById('btn-' + currentActiveToggle)?.classList.remove('active');
+                currentActiveToggle = null;
+            }
+            await apiMove('stop');
+        }
+
+        // Función TOGGLE para botones en pantalla
+        function toggleMove(cmd) {
+            const btn = document.getElementById('btn-' + cmd);
+            
+            if (currentActiveToggle === cmd) {
+                // Si ya está activo, lo paramos
+                stopAll();
+            } else {
+                // Si hay otro activo, le quitamos la clase visual
+                if (currentActiveToggle) {
+                    document.getElementById('btn-' + currentActiveToggle)?.classList.remove('active');
+                }
+                // Activamos el nuevo
+                currentActiveToggle = cmd;
+                btn?.classList.add('active');
+                apiMove(cmd);
+            }
+        }
+
+        // --- LÓGICA TAPPER PARA TECLADO ---
+        const keyMap = {
+            'ArrowUp': 'forward', 'w': 'forward', 'W': 'forward',
+            'ArrowDown': 'backward', 's': 'backward', 'S': 'backward',
+            'ArrowLeft': 'lateral_left', 'a': 'lateral_left', 'A': 'lateral_left',
+            'ArrowRight': 'lateral_right', 'd': 'lateral_right', 'D': 'lateral_right',
+            'q': 'rotate_ccw', 'Q': 'rotate_ccw',
+            'e': 'rotate_cw', 'E': 'rotate_cw',
+            ' ': 'stop'
+        };
+
+        const keysPressed = new Set();
+
+        document.addEventListener('keydown', (e) => {
+            const cmd = keyMap[e.key];
+            if (cmd && !keysPressed.has(e.key)) {
+                e.preventDefault();
+                keysPressed.add(e.key);
+                
+                // Si usamos el teclado, desactivamos cualquier toggle previo
+                if (currentActiveToggle) {
+                    document.getElementById('btn-' + currentActiveToggle)?.classList.remove('active');
+                    currentActiveToggle = null;
+                }
+
+                apiMove(cmd);
+                // Feedback visual momentáneo
+                document.getElementById('btn-' + cmd)?.classList.add('active');
+            }
+        });
+
+        document.addEventListener('keyup', (e) => {
+            const cmd = keyMap[e.key];
+            if (cmd) {
+                keysPressed.delete(e.key);
+                // Al soltar (Tapper), mandamos parar
+                apiMove('stop');
+                document.getElementById('btn-' + cmd)?.classList.remove('active');
+            }
+        });
+
+        // --- RESTO DE FUNCIONES ---
         function syncInputs(id, val, isSlider) {
             const n = document.getElementById(id + '-num');
             const s = document.getElementById(id + '-slider');
@@ -211,13 +290,13 @@ HTML_TEMPLATE = """
         }
 
         function centerServos() { updateServo(0, 70); updateServo(1, 90); }
-        async function apiMove(cmd) { await fetch('/move/' + cmd, { method: 'POST' }); }
-        async function safeRefresh() { await fetch('/move/stop', { method: 'POST' }); location.reload(); }
+        async function safeRefresh() { await stopAll(); location.reload(); }
         async function applyPotency() {
             const s = [1,2,3,4].map(i => document.getElementById(`m${i}-num`).value);
             await fetch(`/free_move?s1=${s[0]}&s2=${s[1]}&s3=${s[2]}&s4=${s[3]}`, {method: 'POST'});
         }
 
+        // Actualización de estado
         setInterval(async () => {
             try {
                 const res = await fetch('/status');
@@ -226,6 +305,7 @@ HTML_TEMPLATE = """
                 const distEl = document.getElementById('dist-val');
                 const distCard = document.getElementById('dist-card');
                 distEl.innerText = data.distance.toFixed(1);
+                
                 if (data.distance > 30) { distCard.style.borderColor = "var(--info)"; distEl.style.color = "var(--info)"; }
                 else if (data.distance > 15) { distCard.style.borderColor = "var(--warning)"; distEl.style.color = "var(--warning)"; }
                 else { distCard.style.borderColor = "var(--danger)"; distEl.style.color = "var(--danger)"; }
