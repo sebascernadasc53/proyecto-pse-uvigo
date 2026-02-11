@@ -147,12 +147,12 @@ class Robot:
     
     def backward_left_diagonal_movement(self,speed=600):
         #Movimiento diagonal a la izquierda hacia atrás
-        self.PWM.set_motor_model(0,speed,speed,0)
+        self.PWM.set_motor_model(speed,0,0,speed)
         self.buzzer_active = True
     
     def backward_right_diagonal_movement(self,speed=600):
         #Movimiento diagonal a la derecha hacia atrás
-        self.PWM.set_motor_model(speed,0,0,speed)
+        self.PWM.set_motor_model(0,speed,speed,0)
         self.buzzer_active = True
 
     def clockwise_orbit(self):
