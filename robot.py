@@ -3,6 +3,7 @@ from ultrasonic import Ultrasonic
 from infrared import Infrared
 from adc import ADC
 from servo import Servo
+from buzzer import Buzzer
 import time
 from threading import Thread
 
@@ -13,7 +14,7 @@ class Robot:
         self.adc = ADC()
         self.servo = Servo()
         self.infrared = Infrared()
-
+        self.buzzer = Buzzer()
         self.distance = 0
         self.adc_readings = {'left_light': 0, 'right_light': 0, 'battery': 0}
         self.infrared_readings = {'center': 0, 'left': 0, 'right': 0}
