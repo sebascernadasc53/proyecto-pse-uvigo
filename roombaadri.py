@@ -43,12 +43,12 @@ def hilo_motores(robot):
 
         # CAMINO LIBRE
         if distancia_actual > 60:
-            robot.forward(700)
+            robot.forward(800)
             look_center = False # Radar modo barrido
             
         # PRECAUCIÓN
-        elif 30 < distancia_actual <= 60:
-            robot.forward(500)
+        elif 35 < distancia_actual <= 60:
+            robot.forward(600)
             look_center = False # Radar modo barrido
         # OBSTÁCULO CERCA → MANIOBRA
         else:
