@@ -15,12 +15,12 @@ class Robot:
         self.servo = Servo()
         self.infrared = Infrared()
         self.buzzer = Buzzer()
-        self.buzzer_active = False
         self.distance = 0
         self.adc_readings = {'left_light': 0, 'right_light': 0, 'battery': 0}
         self.infrared_readings = {'center': 0, 'left': 0, 'right': 0}
 
         self._running = True
+        self.buzzer_active = False
 
         # El hilo que solo se encarga de ADC
         self.thread_adc = Thread(target=self.update_adc, daemon=True)
@@ -33,7 +33,8 @@ class Robot:
         # El hilo solo se encarga de actualizar la lectura del sensor de ultrasonidos
         self.thread = Thread(target=self.update_ultrasonic, daemon=True)
         self.thread.start()
-        #hilo del buzzer
+
+        #El hilo del buzzer
         self.thread_buzzer = Thread(target=self._buzzer_loop, daemon=True)
         self.thread_buzzer.start()
 
@@ -63,7 +64,7 @@ class Robot:
             self.infrared_readings['right'] = self.infrared.read_one_infrared(3)
             time.sleep(0.05)
 
-#funciones del buzzer
+    #funciones del buzzer
     def _buzzer_loop(self):
         """Gestiona el parpadeo del sonido sin bloquear el robot."""
         while self._running:
@@ -86,61 +87,73 @@ class Robot:
         time.sleep(duration)
         self.buzzer.set_state(False)
             
-            
     def set_servo(self, channel, angle, error=10):
         self.servo.set_servo_pwm(str(channel), angle, error)
     
     def forward(self,speed=600):
         # Avanza hacia delante
         self.PWM.set_motor_model(-speed,-speed,-speed,-speed)
+        self.buzzer_active = False
     
     def backward(self, speed=600):
         # Avanza hacia atrás
         self.PWM.set_motor_model(speed,speed,speed,speed)
+        self.buzzer_active = True
         
     def stop(self):
         # Parar el moto
         self.PWM.set_motor_model(0,0,0,0)
+        self.buzzer_active = False
         
     def turn_right(self,speed=600):
         #Giro a la derecha
         self.PWM.set_motor_model(-speed,-speed,0,0)
+        self.buzzer_active = False
         
     def turn_left(self,speed=600):
         #Giro a la izquierda
         self.PWM.set_motor_model(0,0,-speed,-speed)
+        self.buzzer_active = False
         
     def clockwise_turn(self,speed=600):
         #Spin en sentido horario
         self.PWM.set_motor_model(-speed,-speed,speed,speed)
+        self.buzzer_active = False
     
     def counterclockwise_turn(self,speed=600):
         #Spin en sentido antihorario
         self.PWM.set_motor_model(speed,speed,-speed,-speed)
+        self.buzzer_active = False
     
     def right_lateral_movement(self,speed=600):
         #Movimiento lateral a la derecha
         self.PWM.set_motor_model(-speed,speed,speed,-speed)
+        self.buzzer_active = False
     
     def left_lateral_movement(self,speed=600):
         #Movimiento lateral a la izquierda
         self.PWM.set_motor_model(speed,-speed,-speed,speed)
+        self.buzzer_active = False
     
     def forward_left_diagonal_movement(self,speed=600):
         #Movimiento diagonal a la izquierda hacia adelante
         self.PWM.set_motor_model(0,-speed,-speed,0)
+        self.buzzer_active = False
     
     def forward_right_diagonal_movement(self,speed=600):
         #Movimiento diagonal a la derecha hacia adelante
         self.PWM.set_motor_model(-speed,0,0,-speed)
+        self.buzzer_active = False
     
     def backward_left_diagonal_movement(self,speed=600):
         #Movimiento diagonal a la izquierda hacia atrás
         self.PWM.set_motor_model(0,speed,speed,0)
+        self.buzzer_active = True
     
     def backward_right_diagonal_movement(self,speed=600):
         #Movimiento diagonal a la derecha hacia atrás
         self.PWM.set_motor_model(speed,0,0,speed)
+        self.buzzer_active = True
 
     def clockwise_orbit(self):
         #orbita horaria
@@ -153,14 +166,20 @@ class Robot:
     def free(self,speed1,speed2,speed3,speed4):
         #Movimiento libre
         self.PWM.set_motor_model(speed1,speed2,speed3,speed4)
-    
+        if speed1 > 0 and speed2 > 0 and speed3 > 0 and speed4 > 0:
+            self.buzzer_active = True
+        elif speed1 == 0 and speed2 > 0 and speed3 > 0 and speed4 == 0:
+            self.buzzer_active = True
+        elif speed1 > 0 and speed2 == 0 and speed3 == 0 and speed4 > 0:
+            self.buzzer_active = True
+        else:
+            self.buzzer_active = False   
+
     def close(self):
         #Cerrar los motores
         self.stop()
         self.PWM.close()
         self.ultrasonic.close()
         self.infrared.close()
-        self.adc.close()
-        self.servo.close()
         self.buzzer.set_state(False)
         self.buzzer.close()
