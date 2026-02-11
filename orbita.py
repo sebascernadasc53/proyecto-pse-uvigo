@@ -1,13 +1,10 @@
 import time
-#from motor import Ordinary_Car 
 from threading import Thread
 from robot import Robot
 distance = 150
-#ultrasonic = Ultrasonic()
-#PWM = Ordinary_Car()
 D_TARGET = 50  # Distancia deseada al objeto (cm)
 TOL = 10
-Speed = [-1200,4000,800,-4000]
+#Speed = [-1200,4000,800,-4000]
 running = True
 robot = Robot()
 
@@ -27,10 +24,11 @@ def verificar_objeto():
     lecturas = []
     for _ in range (5):
         robot.counter_clockwise_orbit()
-        '''PWM.set_motor_model(Speed[0], Speed[1], Speed[2], Speed[3])'''
-        
+        '''PWM.set_motor_model(Speed[0], Speed[1], Speed[2], Speed[3])'''        
         time.sleep(1)
         lecturas.append(distance)
+        robot.beep_once(0.3)
+    robot.set_beeping(False)
     average = sum(lecturas) / len(lecturas)    
     if len(lecturas) < 3:
         print(f"No hay suficientes lecturas, {(len(lecturas))},para verificar el objeto")
@@ -84,3 +82,4 @@ def main():
         robot.stop()
 if __name__ == "__main__":
     main()
+
