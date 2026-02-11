@@ -172,6 +172,14 @@ class Robot:
             self.buzzer_active = True
         elif speed1 > 0 and speed2 == 0 and speed3 == 0 and speed4 > 0:
             self.buzzer_active = True
+        elif speed1 > 0 and speed2 > 0 and speed3 == 0 and speed4 == 0:
+            self.buzzer_active = True
+        elif speed1 == 0 and speed2 == 0 and speed3 > 0 and speed4 > 0:
+            self.buzzer_active = True
+        elif speed1 > 0 and speed2 == 0 and speed3 > 0 and speed4 == 0:
+            self.buzzer_active = True
+        elif speed1 == 0 and speed2 > 0 and speed3 == 0 and speed4 > 0:
+            self.buzzer_active = True
         else:
             self.buzzer_active = False   
 
