@@ -3,8 +3,6 @@ import time
 import threading
 import random
 import sys
-import subprocess
-
 
 try:
     from robot import Robot
@@ -17,6 +15,7 @@ except ImportError:
     class Robot:
         def __init__(self): 
             self.distance = 0
+            self.enable_antichoque = False  # Variable añadida
             self.adc_readings = {'left_light': 0, 'right_light': 0, 'battery': 0}
             self.infrared_readings = {'left': 0, 'center': 0, 'right': 0}
             self._running = True
@@ -69,6 +68,8 @@ if ROBOT_REAL:
 
 try:
     robot_controller = Robot()
+    if ROBOT_REAL:
+        robot_controller.enable_antichoque = False # Asegurar estado inicial
 except Exception as e:
     print(f"Error: {e}")
     sys.exit(1)
@@ -100,13 +101,12 @@ HTML_TEMPLATE = """
         h2 { font-size: 0.9rem; color: var(--neon-orange); border-bottom: 1px solid #333; padding-bottom: 10px; margin-top: 0; text-transform: uppercase; }
         .grid-controls { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 20px; }
         .btn { background: #2a2a2a; color: white; border: 1px solid #444; padding: 12px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: all 0.1s; position: relative; }
-        
-        /* Estilo para botón activo (Toggle) */
         .btn.active { background: var(--neon-orange) !important; color: black !important; border-color: var(--neon-orange) !important; transform: scale(0.98); box-shadow: 0 0 15px rgba(255, 140, 0, 0.4); }
-        
         .btn-stop { background: var(--danger); border: none; font-size: 0.8rem; font-weight: 900; }
         .btn-special { background: #222; color: var(--purple); font-size: 0.8rem; margin-bottom: 8px; width: 100%; border: 1px solid #444; }
         .btn-special:hover { border-color: var(--purple); background: #2a242d; }
+        .btn-antichoque { border-color: var(--danger); color: var(--danger); }
+        .btn-antichoque.enabled { background: var(--danger); color: white; box-shadow: 0 0 10px rgba(231, 76, 60, 0.4); }
         .motor-row { display: flex; align-items: center; gap: 10px; margin: 8px 0; background: #222; padding: 8px; border-radius: 8px; }
         .input-val { width: 65px; background: #111; border: 1px solid #444; color: var(--neon-orange); text-align: right; padding: 4px; border-radius: 4px; font-size: 0.85rem; }
         input[type=range] { flex: 1; accent-color: var(--neon-orange); cursor: pointer; }
@@ -131,6 +131,7 @@ HTML_TEMPLATE = """
 
         <div class="card">
             <h2>Movimientos Especiales</h2>
+            <button id="btn-antichoque" class="btn btn-special btn-antichoque" onclick="toggleAntichoque()">🛡️ Antichoque: OFF</button>
             <button id="btn-orbit_cw" class="btn btn-special" onclick="toggleMove('orbit_cw')">🌀 Órbita Horaria</button>
             <button id="btn-orbit_ccw" class="btn btn-special" onclick="toggleMove('orbit_ccw')">🌀 Órbita Antihoraria</button>
             
@@ -191,7 +192,18 @@ HTML_TEMPLATE = """
 
         let currentActiveToggle = null;
 
-        // --- LÓGICA DE MOVIMIENTO ---
+        async function toggleAntichoque() {
+            const res = await fetch('/toggle_antichoque', { method: 'POST' });
+            const data = await res.json();
+            const btn = document.getElementById('btn-antichoque');
+            if (data.enabled) {
+                btn.classList.add('enabled');
+                btn.innerText = "🛡️ Antichoque: ON";
+            } else {
+                btn.classList.remove('enabled');
+                btn.innerText = "🛡️ Antichoque: OFF";
+            }
+        }
 
         async function apiMove(cmd) { 
             await fetch('/move/' + cmd, { method: 'POST' }); 
@@ -205,26 +217,20 @@ HTML_TEMPLATE = """
             await apiMove('stop');
         }
 
-        // Función TOGGLE para botones en pantalla
         function toggleMove(cmd) {
             const btn = document.getElementById('btn-' + cmd);
-            
             if (currentActiveToggle === cmd) {
-                // Si ya está activo, lo paramos
                 stopAll();
             } else {
-                // Si hay otro activo, le quitamos la clase visual
                 if (currentActiveToggle) {
                     document.getElementById('btn-' + currentActiveToggle)?.classList.remove('active');
                 }
-                // Activamos el nuevo
                 currentActiveToggle = cmd;
                 btn?.classList.add('active');
                 apiMove(cmd);
             }
         }
 
-        // --- LÓGICA TAPPER PARA TECLADO ---
         const keyMap = {
             'ArrowUp': 'forward', 'w': 'forward', 'W': 'forward',
             'ArrowDown': 'backward', 's': 'backward', 'S': 'backward',
@@ -242,15 +248,11 @@ HTML_TEMPLATE = """
             if (cmd && !keysPressed.has(e.key)) {
                 e.preventDefault();
                 keysPressed.add(e.key);
-                
-                // Si usamos el teclado, desactivamos cualquier toggle previo
                 if (currentActiveToggle) {
                     document.getElementById('btn-' + currentActiveToggle)?.classList.remove('active');
                     currentActiveToggle = null;
                 }
-
                 apiMove(cmd);
-                // Feedback visual momentáneo
                 document.getElementById('btn-' + cmd)?.classList.add('active');
             }
         });
@@ -259,13 +261,11 @@ HTML_TEMPLATE = """
             const cmd = keyMap[e.key];
             if (cmd) {
                 keysPressed.delete(e.key);
-                // Al soltar (Tapper), mandamos parar
                 apiMove('stop');
                 document.getElementById('btn-' + cmd)?.classList.remove('active');
             }
         });
 
-        // --- RESTO DE FUNCIONES ---
         function syncInputs(id, val, isSlider) {
             const n = document.getElementById(id + '-num');
             const s = document.getElementById(id + '-slider');
@@ -286,12 +286,10 @@ HTML_TEMPLATE = """
             await fetch(`/free_move?s1=${s[0]}&s2=${s[1]}&s3=${s[2]}&s4=${s[3]}`, {method: 'POST'});
         }
 
-        // Actualización de estado
         setInterval(async () => {
             try {
                 const res = await fetch('/status');
                 const data = await res.json();
-                
                 const distEl = document.getElementById('dist-val');
                 const distCard = document.getElementById('dist-card');
                 distEl.innerText = data.distance.toFixed(1);
@@ -321,6 +319,13 @@ HTML_TEMPLATE = """
 def index():
     return render_template_string(HTML_TEMPLATE)
 
+@app.route('/toggle_antichoque', methods=['POST'])
+def toggle_antichoque():
+    # Cambia el estado en la instancia del controlador
+    new_state = not getattr(robot_controller, 'enable_antichoque', False)
+    robot_controller.enable_antichoque = new_state
+    return jsonify({"status": "ok", "enabled": new_state})
+
 @app.route('/set_global_speed', methods=['POST'])
 def set_global_speed():
     global current_global_speed
@@ -335,7 +340,6 @@ def set_servo_api():
         robot_controller.set_servo(int(channel), int(angle))
         return jsonify({"status": "ok"})
     return jsonify({"status": "error"}), 400
-
 
 @app.route('/move/<direction>', methods=['POST'])
 def move_robot(direction):
@@ -385,7 +389,8 @@ def status():
         "distance": getattr(robot_controller, 'distance', 0),
         "status": current_status,
         "adc": getattr(robot_controller, 'adc_readings', {}),
-        "infrared": getattr(robot_controller, 'infrared_readings', {})
+        "infrared": getattr(robot_controller, 'infrared_readings', {}),
+        "antichoque": getattr(robot_controller, 'enable_antichoque', False)
     })
 
 if __name__ == '__main__':
