@@ -5,16 +5,6 @@ import random
 import sys
 import subprocess
 
-# ======================================================
-# CONFIGURACIÓN DE SCRIPTS (Backend mantenido, oculto en frontend)
-# ======================================================
-SCRIPTS_CONFIG = {
-    1: {"name": "Antichoque", "file": "antichoque.py"},
-    2: {"name": "Roomba", "file": "roomba.py"},
-    3: {"name": "Órbita Script", "file": "orbita.py"},
-    4: {"name": "Vacío", "file": None} 
-}
-# ======================================================
 
 try:
     from robot import Robot
@@ -329,7 +319,7 @@ HTML_TEMPLATE = """
 
 @app.route('/')
 def index():
-    return render_template_string(HTML_TEMPLATE, scripts=SCRIPTS_CONFIG)
+    return render_template_string(HTML_TEMPLATE)
 
 @app.route('/set_global_speed', methods=['POST'])
 def set_global_speed():
@@ -346,19 +336,6 @@ def set_servo_api():
         return jsonify({"status": "ok"})
     return jsonify({"status": "error"}), 400
 
-@app.route('/run_script/<int:script_id>', methods=['POST'])
-def run_script(script_id):
-    global current_status, active_process
-    cfg = SCRIPTS_CONFIG.get(script_id)
-    if not cfg or not cfg["file"]: return jsonify({"status": "error"}), 404
-    if active_process and active_process.poll() is None: active_process.terminate()
-    try:
-        current_status = f"Ejecutando {cfg['name']}"
-        active_process = subprocess.Popen(["python3", cfg["file"]])
-        return jsonify({"status": "ok"})
-    except:
-        current_status = "Error Script"
-        return jsonify({"status": "error"})
 
 @app.route('/move/<direction>', methods=['POST'])
 def move_robot(direction):
