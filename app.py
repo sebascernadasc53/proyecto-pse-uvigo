@@ -203,7 +203,7 @@ HTML_TEMPLATE = """
             </div>
             <div class="motor-row">
                 <div style="font-size:0.7rem; width:40px">S1 (V)</div>
-                <input type="range" id="s1-slider" min="0" max="180" value="90" oninput="updateServo(1, this.value)">
+                <input type="range" id="s1-slider" min="75" max="175" value="90" oninput="updateServo(1, this.value)">
                 <span id="s1-val" class="input-val" style="padding:2px">90°</span>
             </div>
         </div>
