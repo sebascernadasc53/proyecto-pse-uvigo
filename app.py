@@ -8,10 +8,10 @@ try:
     from robot import Robot
     ROBOT_REAL = True
     print("Modo: ROBOT REAL")
-except ImportError:
+except ImportError: 
     ROBOT_REAL = False
     print("Modo: SIMULACIÓN")
-    
+#Crea la clase robot para simular el funcionamiento de la interfaz   
     class Robot:
         def __init__(self): 
             self.distance = 0
@@ -60,9 +60,10 @@ except ImportError:
         def free(self, s1, s2, s3, s4): print(f"Mock: Libre FL{s1} RL{s2} FR{s3} RR{s4}")
         def set_servo(self, channel, angle, error=10): print(f"Mock: Servo {channel} a {angle}")
         def close(self): self._running = False
-
+#Final de la creación de la clase simulada
 app = Flask(__name__)
 
+#Inicialización del robot
 if ROBOT_REAL:
     time.sleep(0.5)
 
@@ -78,12 +79,15 @@ current_global_speed = 600
 current_status = "Parado"
 active_process = None
 
+#Final de la inicialización
+#Plantilla de HTML
+
 HTML_TEMPLATE = """
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Robot Control Dashboard</title>
+    <title>Control robot FREENOVE 4WD Mecanum wheels</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
         :root { 
@@ -121,8 +125,8 @@ HTML_TEMPLATE = """
     <h1>Robot <b>OS</b></h1>
     <div class="container">
         <div class="top-stats">
-            <div id="dist-card" class="stat-card"><div class="stat-label">📡 Distancia</div><div class="stat-value"><span id="dist-val">--</span><small>cm</small></div></div>
-            <div class="stat-card" style="border-color: var(--success)"><div class="stat-label">🔋 Batería</div><div class="stat-value"><span id="batt-val">--</span><small>V</small></div></div>
+            <div id="dist-card" class="stat-card"><div class="stat-label">📡 Distancia</div><div class="stat-value"><span id="dist-val">--</span><small> cm</small></div></div>
+            <div class="stat-card" style="border-color: var(--success)"><div class="stat-label">🔋 Batería</div><div class="stat-value"><span id="batt-val">--</span><small> V</small></div></div>
             <div class="stat-card" style="border-color: var(--warning)"><div class="stat-label">💡 Luz</div><div class="stat-value"><span id="light-l-val">--</span> / <span id="light-r-val">--</span></div></div>
             <div class="stat-card" style="border-color: var(--purple)"><div class="stat-label">🛤️ Infrarrojos</div>
                 <div style="margin-top:5px"><div id="ir-left" class="infra-dot"></div> <div id="ir-center" class="infra-dot"></div> <div id="ir-right" class="infra-dot"></div></div>
@@ -314,6 +318,7 @@ HTML_TEMPLATE = """
 </body>
 </html>
 """
+#Final plantilla HTML
 
 @app.route('/')
 def index():
