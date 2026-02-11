@@ -15,6 +15,7 @@ class Robot:
         self.servo = Servo()
         self.infrared = Infrared()
         self.buzzer = Buzzer()
+        self.buzzer_active = False
         self.distance = 0
         self.adc_readings = {'left_light': 0, 'right_light': 0, 'battery': 0}
         self.infrared_readings = {'center': 0, 'left': 0, 'right': 0}
@@ -32,6 +33,9 @@ class Robot:
         # El hilo solo se encarga de actualizar la lectura del sensor de ultrasonidos
         self.thread = Thread(target=self.update_ultrasonic, daemon=True)
         self.thread.start()
+        #hilo del buzzer
+        self.thread_buzzer = Thread(target=self._buzzer_loop, daemon=True)
+        self.thread_buzzer.start()
 
     def update_ultrasonic(self):
         while self._running:
@@ -58,6 +62,30 @@ class Robot:
             self.infrared_readings['left'] = self.infrared.read_one_infrared(1)
             self.infrared_readings['right'] = self.infrared.read_one_infrared(3)
             time.sleep(0.05)
+
+#funciones del buzzer
+    def _buzzer_loop(self):
+        """Gestiona el parpadeo del sonido sin bloquear el robot."""
+        while self._running:
+            if self.buzzer_active:
+                self.buzzer.set_state(True)
+                time.sleep(0.5)
+                self.buzzer.set_state(False)
+                time.sleep(0.5)
+            else:
+                self.buzzer.set_state(False)
+                time.sleep(0.1) # Pequeña pausa para no saturar la CPU
+
+    def set_beeping(self, active: bool):
+        """Método para encender/apagar el modo intermitente."""
+        self.buzzer_active = active
+
+    def beep_once(self, duration=0.1):
+        """Pitido rápido único (útil para avisos cortos)."""
+        self.buzzer.set_state(True)
+        time.sleep(duration)
+        self.buzzer.set_state(False)
+            
             
     def set_servo(self, channel, angle, error=10):
         self.servo.set_servo_pwm(str(channel), angle, error)
@@ -134,3 +162,5 @@ class Robot:
         self.infrared.close()
         self.adc.close()
         self.servo.close()
+        self.buzzer.set_state(False)
+        self.buzzer.close()
