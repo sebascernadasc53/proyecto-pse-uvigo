@@ -5,9 +5,9 @@ import random
 import sys
 import subprocess
 
-
-# CONFIGURACIÓN DE SCRIPTS PERSONALIZADOS
-# Edita SCRIPTS_CONFIG para añadir o cambiar funciones
+# ======================================================
+# CONFIGURACIÓN DE SCRIPTS (Backend mantenido, oculto en frontend)
+# ======================================================
 SCRIPTS_CONFIG = {
     1: {"name": "Antichoque", "file": "antichoque.py"},
     2: {"name": "Roomba", "file": "roomba.py"},
@@ -16,15 +16,14 @@ SCRIPTS_CONFIG = {
 }
 # ======================================================
 
-try: #intenta importar la clase Robot que se encuentra en robot.py
+try:
     from robot import Robot
     ROBOT_REAL = True
-    print("Modo: ROBOT REAL") #Se usa el robot
+    print("Modo: ROBOT REAL")
 except ImportError:
     ROBOT_REAL = False
-    print("Modo: SIMULACIÓN") #Se simula el robot
-
-#------------Se crea la clase robot para la simulación -----------------   
+    print("Modo: SIMULACIÓN")
+    
     class Robot:
         def __init__(self): 
             self.distance = 0
@@ -67,12 +66,11 @@ except ImportError:
         def backward_right_diagonal_movement(self, speed=600): print("Mock: Diagonal Der-Atrás")
         def clockwise_turn(self, speed=600): print("Mock: Rotar Horario")
         def counterclockwise_turn(self, speed=600): print("Mock: Rotar Anti-Horario")
-        def clockwise_orbit(self): print("Mock: Órbita")
-        def counter_clockwise_orbit(self): print("Mock: Órbita")
+        def clockwise_orbit(self): print("Mock: Órbita CW")
+        def counter_clockwise_orbit(self): print("Mock: Órbita CCW")
         def free(self, s1, s2, s3, s4): print(f"Mock: Libre FL{s1} RL{s2} FR{s3} RR{s4}")
+        def set_servo(self, channel, angle, error=10): print(f"Mock: Servo {channel} a {angle}")
         def close(self): self._running = False
-
-#Final de la creación de la clase robot para la simulación ------------------------
 
 app = Flask(__name__)
 
@@ -98,15 +96,9 @@ HTML_TEMPLATE = """
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
         :root { 
-            --neon-orange: #ff8c00; 
-            --bg-dark: #0f0f0f; 
-            --panel-bg: #1a1a1a; 
-            --success: #2ecc71; 
-            --danger: #e74c3c; 
-            --warning: #f39c12;
-            --info: #3498db; 
-            --purple: #9b59b6;
-
+            --neon-orange: #ff8c00; --bg-dark: #0f0f0f; --panel-bg: #1a1a1a; 
+            --success: #2ecc71; --danger: #e74c3c; --warning: #f39c12;
+            --info: #3498db; --purple: #9b59b6;
         }
         body { font-family: 'Segoe UI', sans-serif; background: var(--bg-dark); color: #eee; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
         .container { max-width: 1200px; width: 100%; display: grid; grid-template-columns: 280px 1fr 1fr; gap: 20px; }
@@ -119,13 +111,12 @@ HTML_TEMPLATE = """
         .grid-controls { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 20px; }
         .btn { background: #2a2a2a; color: white; border: 1px solid #444; padding: 12px; border-radius: 8px; cursor: pointer; font-weight: bold; }
         .btn:active { background: #333; }
-        .btn-stop { background: var(--danger); border: none; }
-        .btn-special { background: #222; color: var(--purple); font-size: 0.8rem; margin-bottom: 8px; width: 100%; }
-        .btn-script { background: #1e1e1e; color: var(--info); font-size: 0.75rem; border-left: 3px solid var(--info); margin-bottom: 5px; width: 100%; text-align: left; padding: 12px; }
-        .btn-disabled { opacity: 0.5; border-color: #444; color: #666; cursor: not-allowed; }
+        .btn-stop { background: var(--danger); border: none; font-size: 0.8rem; font-weight: 900; }
+        .btn-special { background: #222; color: var(--purple); font-size: 0.8rem; margin-bottom: 8px; width: 100%; border: 1px solid #444; }
+        .btn-special:hover { border-color: var(--purple); background: #2a242d; }
         .motor-row { display: flex; align-items: center; gap: 10px; margin: 8px 0; background: #222; padding: 8px; border-radius: 8px; }
-        input[type=range] { flex: 1; accent-color: var(--neon-orange); }
-        .input-val { width: 65px; background: #111; border: 1px solid #444; color: var(--neon-orange); text-align: right; }
+        .input-val { width: 65px; background: #111; border: 1px solid #444; color: var(--neon-orange); text-align: right; padding: 4px; border-radius: 4px; font-size: 0.85rem; }
+        input[type=range] { flex: 1; accent-color: var(--neon-orange); cursor: pointer; }
         .infra-dot { width: 12px; height: 12px; border-radius: 50%; background: #333; display: inline-block; }
         .infra-dot.active { background: var(--success); box-shadow: 0 0 8px var(--success); }
         .status-moving { color: var(--success) !important; }
@@ -134,34 +125,35 @@ HTML_TEMPLATE = """
     </style>
 </head>
 <body>
-    <h1><b>Control Robot FREENOVE 4WD Mecanum Wheels</b></h1>
+    <h1>Robot <b>OS</b></h1>
     <div class="container">
+        <!-- Panel de Sensores Superior -->
         <div class="top-stats">
-            <div id="dist-card" class="stat-card">
-                <div class="stat-label">📡 Distancia</div>
-                <div class="stat-value"><span id="dist-val">--</span><small style="font-size: 0.7rem"> cm</small></div>
-            </div>
-            <div class="stat-card" style="border-color: var(--success)"><div class="stat-label">🔋 Batería</div><div class="stat-value"><span id="batt-val">--</span><small style="font-size: 0.7rem"> V</small></div></div>
-            <div class="stat-card" style="border-color: var(--warning)"><div class="stat-label">💡 Luz</div><div class="stat-value" style="font-size: 1.1rem"><span id="light-l-val">--</span> / <span id="light-r-val">--</span></div></div>
+            <div id="dist-card" class="stat-card"><div class="stat-label">📡 Distancia</div><div class="stat-value"><span id="dist-val">--</span><small>cm</small></div></div>
+            <div class="stat-card" style="border-color: var(--success)"><div class="stat-label">🔋 Batería</div><div class="stat-value"><span id="batt-val">--</span><small>V</small></div></div>
+            <div class="stat-card" style="border-color: var(--warning)"><div class="stat-label">💡 Luz</div><div class="stat-value"><span id="light-l-val">--</span> / <span id="light-r-val">--</span></div></div>
             <div class="stat-card" style="border-color: var(--purple)"><div class="stat-label">🛤️ Infrarrojos</div>
-                <div id="ir-left" class="infra-dot"></div> <div id="ir-center" class="infra-dot"></div> <div id="ir-right" class="infra-dot"></div>
+                <div style="margin-top:5px"><div id="ir-left" class="infra-dot"></div> <div id="ir-center" class="infra-dot"></div> <div id="ir-right" class="infra-dot"></div></div>
             </div>
         </div>
 
         <div class="card">
-            <h2>Movimientos</h2>
+            <h2>Movimientos Especiales</h2>
             <button class="btn btn-special" onclick="apiMove('orbit_cw')">🌀 Órbita Horaria</button>
             <button class="btn btn-special" onclick="apiMove('orbit_ccw')">🌀 Órbita Antihoraria</button>
-            <h2 style="margin-top: 20px;">Automatización (.py)</h2>
-            <div id="scripts-container">
-                {% for id, cfg in scripts.items() %}
-                    {% if cfg.file %}
-                        <button class="btn btn-script" onclick="runScript({{ id }})">🚀 {{ cfg.name }}</button>
-                    {% else %}
-                        <button class="btn btn-script btn-disabled">➕ {{ cfg.name }}</button>
-                    {% endif %}
-                {% endfor %}
+            
+            <h2 style="margin-top:20px;">Control Servos</h2>
+            <div class="motor-row">
+                <div style="font-size:0.7rem; width:40px">S0 (H)</div>
+                <input type="range" id="s0-slider" min="0" max="180" value="70" oninput="updateServo(0, this.value)">
+                <span id="s0-val" class="input-val" style="padding:2px; min-width:30px; text-align:center">70°</span>
             </div>
+            <div class="motor-row">
+                <div style="font-size:0.7rem; width:40px">S1 (V)</div>
+                <input type="range" id="s1-slider" min="0" max="180" value="90" oninput="updateServo(1, this.value)">
+                <span id="s1-val" class="input-val" style="padding:2px; min-width:30px; text-align:center">90°</span>
+            </div>
+            <button class="btn btn-special" style="border-color: var(--info); color: var(--info); margin-top:5px" onclick="centerServos()">🎯 Centrar Cabeza</button>
         </div>
 
         <div class="card">
@@ -180,9 +172,6 @@ HTML_TEMPLATE = """
                 <button class="btn" style="font-size:0.6rem; color: var(--warning);" onclick="safeRefresh()">REFRESH</button>
                 <button class="btn" onclick="apiMove('rotate_cw')">↻</button>
             </div>
-            <!-- Botón Centrar Servos -->
-            <button class="btn btn-special" style="color: var(--info)" onclick="centerServos()">🎯 Centrar Cabeza (70, 90)</button>
-
             <div class="motor-row" style="margin-top:15px">
                 <div style="font-size:0.7rem; width:70px">CRUCERO</div>
                 <input type="range" id="global-speed-slider" min="0" max="4095" value="600" oninput="syncInputs('global-speed', this.value, true)">
@@ -191,21 +180,9 @@ HTML_TEMPLATE = """
         </div>
 
         <div class="card">
-            <h2>Ajuste personalizado de motores</h2>
+            <h2>Motores Individuales</h2>
             <div id="motor-sliders"></div>
-            <button class="btn" style="background: var(--success); width:100%; margin-top:10px; border:none" onclick="applyPotency()">Aplicar control</button>
-            
-            <h2 style="margin-top:20px;">Control Servos</h2>
-            <div class="motor-row">
-                <div style="font-size:0.7rem; width:40px">S0 (H)</div>
-                <input type="range" id="s0-slider" min="0" max="180" value="70" oninput="updateServo(0, this.value)">
-                <span id="s0-val" class="input-val" style="padding:2px">90°</span>
-            </div>
-            <div class="motor-row">
-                <div style="font-size:0.7rem; width:40px">S1 (V)</div>
-                <input type="range" id="s1-slider" min="75" max="175" value="90" oninput="updateServo(1, this.value)">
-                <span id="s1-val" class="input-val" style="padding:2px">90°</span>
-            </div>
+            <button class="btn" style="background: var(--success); width:100%; margin-top:10px; border:none" onclick="applyPotency()">Aplicar Motores</button>
         </div>
     </div>
 
@@ -233,17 +210,9 @@ HTML_TEMPLATE = """
             fetch(`/set_servo?channel=${channel}&angle=${angle}`, {method:'POST'});
         }
 
-        function centerServos() {
-            updateServo(0, 70);
-            updateServo(1, 90);
-        }
-
+        function centerServos() { updateServo(0, 70); updateServo(1, 90); }
         async function apiMove(cmd) { await fetch('/move/' + cmd, { method: 'POST' }); }
-        async function runScript(id) { await fetch('/run_script/' + id, { method: 'POST' }); }
-        async function safeRefresh() {
-            await fetch('/move/stop', { method: 'POST' });
-            location.reload();
-        }
+        async function safeRefresh() { await fetch('/move/stop', { method: 'POST' }); location.reload(); }
         async function applyPotency() {
             const s = [1,2,3,4].map(i => document.getElementById(`m${i}-num`).value);
             await fetch(`/free_move?s1=${s[0]}&s2=${s[1]}&s3=${s[2]}&s4=${s[3]}`, {method: 'POST'});
@@ -253,13 +222,12 @@ HTML_TEMPLATE = """
             try {
                 const res = await fetch('/status');
                 const data = await res.json();
+                
                 const distEl = document.getElementById('dist-val');
                 const distCard = document.getElementById('dist-card');
-                const distance = data.distance;
-                distEl.innerText = distance.toFixed(1);
-                
-                if (distance > 30) { distCard.style.borderColor = "var(--info)"; distEl.style.color = "var(--info)"; }
-                else if (distance > 15) { distCard.style.borderColor = "var(--warning)"; distEl.style.color = "var(--warning)"; }
+                distEl.innerText = data.distance.toFixed(1);
+                if (data.distance > 30) { distCard.style.borderColor = "var(--info)"; distEl.style.color = "var(--info)"; }
+                else if (data.distance > 15) { distCard.style.borderColor = "var(--warning)"; distEl.style.color = "var(--warning)"; }
                 else { distCard.style.borderColor = "var(--danger)"; distEl.style.color = "var(--danger)"; }
                 
                 const statusEl = document.getElementById('status-display');
@@ -270,8 +238,7 @@ HTML_TEMPLATE = """
                 document.getElementById('light-l-val').innerText = data.adc.left_light;
                 document.getElementById('light-r-val').innerText = data.adc.right_light;
                 ['left','center','right'].forEach(pos => {
-                    const dot = document.getElementById('ir-'+pos);
-                    if(dot) dot.className = 'infra-dot' + (data.infrared[pos] ? ' active' : '');
+                    document.getElementById('ir-'+pos).className = 'infra-dot' + (data.infrared[pos] ? ' active' : '');
                 });
             } catch(e) {}
         }, 500);
