@@ -128,11 +128,8 @@ HTML_TEMPLATE = """
         .input-val { width: 65px; background: #111; border: 1px solid #444; color: var(--neon-orange); text-align: right; }
         .infra-dot { width: 12px; height: 12px; border-radius: 50%; background: #333; display: inline-block; }
         .infra-dot.active { background: var(--success); box-shadow: 0 0 8px var(--success); }
-        
-        /* Colores dinámicos de estado */
         .status-moving { color: var(--success) !important; }
         .status-stopped { color: var(--danger) !important; }
-        
         @media (max-width: 1000px) { .container { grid-template-columns: 1fr; } .top-stats { grid-column: span 1; } }
     </style>
 </head>
@@ -183,7 +180,10 @@ HTML_TEMPLATE = """
                 <button class="btn" style="font-size:0.6rem; color: var(--warning);" onclick="safeRefresh()">REFRESH</button>
                 <button class="btn" onclick="apiMove('rotate_cw')">↻</button>
             </div>
-            <div class="motor-row">
+            <!-- Botón Centrar Servos -->
+            <button class="btn btn-special" style="color: var(--info)" onclick="centerServos()">🎯 Centrar Cabeza (70, 90)</button>
+
+            <div class="motor-row" style="margin-top:15px">
                 <div style="font-size:0.7rem; width:70px">CRUCERO</div>
                 <input type="range" id="global-speed-slider" min="0" max="4095" value="600" oninput="syncInputs('global-speed', this.value, true)">
                 <input type="number" id="global-speed-num" class="input-val" value="600" oninput="syncInputs('global-speed', this.value, false)">
@@ -193,7 +193,19 @@ HTML_TEMPLATE = """
         <div class="card">
             <h2>Ajuste personalizado de motores</h2>
             <div id="motor-sliders"></div>
-            <button class="btn" style="background: var(--success); width:100%; margin-top:10px; border:none" onclick="applyPotency()">RUN</button>
+            <button class="btn" style="background: var(--success); width:100%; margin-top:10px; border:none" onclick="applyPotency()">Aplicar control</button>
+            
+            <h2 style="margin-top:20px;">Control Servos</h2>
+            <div class="motor-row">
+                <div style="font-size:0.7rem; width:40px">S0 (H)</div>
+                <input type="range" id="s0-slider" min="0" max="180" value="70" oninput="updateServo(0, this.value)">
+                <span id="s0-val" class="input-val" style="padding:2px">90°</span>
+            </div>
+            <div class="motor-row">
+                <div style="font-size:0.7rem; width:40px">S1 (V)</div>
+                <input type="range" id="s1-slider" min="0" max="180" value="90" oninput="updateServo(1, this.value)">
+                <span id="s1-val" class="input-val" style="padding:2px">90°</span>
+            </div>
         </div>
     </div>
 
@@ -215,14 +227,23 @@ HTML_TEMPLATE = """
             if (id === 'global-speed') fetch('/set_global_speed', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({speed:parseInt(val)})});
         }
 
+        function updateServo(channel, angle) {
+            document.getElementById(`s${channel}-val`).innerText = angle + "°";
+            document.getElementById(`s${channel}-slider`).value = angle;
+            fetch(`/set_servo?channel=${channel}&angle=${angle}`, {method:'POST'});
+        }
+
+        function centerServos() {
+            updateServo(0, 70);
+            updateServo(1, 90);
+        }
+
         async function apiMove(cmd) { await fetch('/move/' + cmd, { method: 'POST' }); }
         async function runScript(id) { await fetch('/run_script/' + id, { method: 'POST' }); }
-        
         async function safeRefresh() {
             await fetch('/move/stop', { method: 'POST' });
             location.reload();
         }
-
         async function applyPotency() {
             const s = [1,2,3,4].map(i => document.getElementById(`m${i}-num`).value);
             await fetch(`/free_move?s1=${s[0]}&s2=${s[1]}&s3=${s[2]}&s4=${s[3]}`, {method: 'POST'});
@@ -232,32 +253,18 @@ HTML_TEMPLATE = """
             try {
                 const res = await fetch('/status');
                 const data = await res.json();
-                
-                // Actualizar distancia y sus colores (Lógica recuperada)
                 const distEl = document.getElementById('dist-val');
                 const distCard = document.getElementById('dist-card');
                 const distance = data.distance;
                 distEl.innerText = distance.toFixed(1);
                 
-                if (distance > 30) {
-                    distCard.style.borderColor = "var(--info)";
-                    distEl.style.color = "var(--info)";
-                } else if (distance > 15) {
-                    distCard.style.borderColor = "var(--warning)";
-                    distEl.style.color = "var(--warning)";
-                } else {
-                    distCard.style.borderColor = "var(--danger)";
-                    distEl.style.color = "var(--danger)";
-                }
+                if (distance > 30) { distCard.style.borderColor = "var(--info)"; distEl.style.color = "var(--info)"; }
+                else if (distance > 15) { distCard.style.borderColor = "var(--warning)"; distEl.style.color = "var(--warning)"; }
+                else { distCard.style.borderColor = "var(--danger)"; distEl.style.color = "var(--danger)"; }
                 
-                // Estado dinámico
                 const statusEl = document.getElementById('status-display');
                 statusEl.innerText = data.status;
-                if (data.status === "Parado" || data.status.includes("Error")) {
-                    statusEl.className = 'status-stopped';
-                } else {
-                    statusEl.className = 'status-moving';
-                }
+                statusEl.className = (data.status === "Parado" || data.status.includes("Error")) ? 'status-stopped' : 'status-moving';
 
                 document.getElementById('batt-val').innerText = data.adc.battery.toFixed(2);
                 document.getElementById('light-l-val').innerText = data.adc.left_light;
@@ -282,6 +289,15 @@ def set_global_speed():
     global current_global_speed
     current_global_speed = request.get_json().get('speed', 600)
     return jsonify({"status": "ok"})
+
+@app.route('/set_servo', methods=['POST'])
+def set_servo_api():
+    channel = request.args.get('channel')
+    angle = request.args.get('angle')
+    if channel is not None and angle is not None:
+        robot_controller.set_servo(int(channel), int(angle))
+        return jsonify({"status": "ok"})
+    return jsonify({"status": "error"}), 400
 
 @app.route('/run_script/<int:script_id>', methods=['POST'])
 def run_script(script_id):
