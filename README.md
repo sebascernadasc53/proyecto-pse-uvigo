@@ -44,9 +44,15 @@ Están definidos los métodos con diferentes posibles movimientos:
 13. counter_clockwise_orbit
 14. free
 
-Están definidos los métodos para la lectura de sensores
+Están definidos los hilos para la lectura de sensores
 1. update_ultrasonic
+La lectura del sensor se encuentra en la variable distance
 2. update_adc
+Las lecturas de los tres sensores están en la variable adc_readings {'left_light': 0, 'right_light': 0, 'battery': 0}
 3. update_infrared
+Las lecturas de los tres innfrarrojos están en la variable infrared_readings {'center': 0, 'left': 0, 'right': 0}
+
+
+Está definido el método antichoque que se activa cuando la variable booleana enable_antichoque que cuando está activa detiene el movimiento en curso cuando está muy cerca (< 30 cm) y disminuye la velocidad entre 30 y 60 cm
 
 
