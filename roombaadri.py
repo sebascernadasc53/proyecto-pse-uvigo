@@ -43,12 +43,12 @@ def hilo_motores(robot):
 
         # CAMINO LIBRE
         if distancia_actual > 60:
-            robot.forward(800)
+            robot.forward(700)
             look_center = False # Radar modo barrido
             
         # PRECAUCIÓN
-        elif 35 < distancia_actual <= 60:
-            robot.forward(600)
+        elif 40 < distancia_actual <= 60:
+            robot.forward(500)
             look_center = False # Radar modo barrido
         # OBSTÁCULO CERCA → MANIOBRA
         else:
@@ -65,7 +65,7 @@ def hilo_motores(robot):
             # Paso 2: Girar hasta que el camino esté despejado (bucle que termina cuando la distancia es mayor que 40 cm)
             while robot.distance <= 45 and running:
                 robot.clockwise_turn(800) # Gira sobre sí mismo en sentido horario
-                time.sleep(0.1)
+                time.sleep(0.05)
             
             print("[OK] Camino despejado, reanudando marcha.")
             time.sleep(0.05)
