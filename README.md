@@ -19,5 +19,11 @@ https://github.com/Freenove/Freenove_4WD_Smart_Car_Kit_for_Raspberry_Pi
 4. Ya está listo para ejecutarse los programas
 
 # Descripción Programas
+1. Siguelineas.py : Como su nombre indica, al ejecutar el código el robot empieza a seguir la línea
+2. antichoque.py : Al ejecutarse el robot avanza hacia delante hasta que detecta un obtáculo y frena
+3. Programa de aviso a la oscuridad.py : Activa la bocina cuando las resistencias sensibles a la luz detectan que el entorno está oscuro
+4. roombaadri.py : Este programa mueve el robot evitando chocarse con las paredes al estilo de un robot aspirador tipo roomba
+5. app.py : Interfaz de control del robot. Permite mover el robot, la posición de los ultrasonidos y obtener las lecturas de los sensores
+6. robot.py : define la clase robot
 
 
